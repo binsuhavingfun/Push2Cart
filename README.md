@@ -72,14 +72,10 @@ npm run dev
 6. Open [http://localhost:3000](http://localhost:3000).
 ## Available Scripts
 
-- 
-pm run dev: start local development server.
-- 
-pm run build: create production build (recommended before deploy).
-- 
-pm start: run production server after build (if configured in your project).
-- 
-pm run lint: run lint checks (if configured in your project).
+- `npm run dev`: start local development server.
+- `npm run build`: create production build (recommended before deploy).
+- `npm start`: run production server after build (if configured in your project).
+- `npm run lint`: run lint checks (if configured in your project).
 
 ## Supabase Setup Guide
 
@@ -205,68 +201,69 @@ This section explains `components/navbar.tsx` block by block and why each part e
 
 This section explains the role of each major code area and why it is implemented that way.
 
-1. App Router pages (pp/*)
-- pp/layout.tsx: global shell wrapper for providers, background effects, fixed navbar, and main content spacing.
-- pp/globals.css: global Tailwind and theme-level styles shared across all routes.
-- pp/page.tsx: homepage entry with hero and featured sections.
-- pp/about/page.tsx, pp/contact/page.tsx: static marketing/info pages.
-- pp/products/page.tsx: product listing page that feeds from Supabase or fallback data.
-- pp/products/[id]/page.tsx: product detail page per item id with add-to-cart and reviews.
-- pp/cart/page.tsx: cart page container for cart UI actions.
-- pp/checkout/page.tsx: checkout page with voucher and order placement flow.
-- pp/auth/page.tsx: authentication page for sign in/sign up flows.
-- pp/orders/page.tsx, pp/orders/[id]/page.tsx: customer order list and individual order status tracking.
-- pp/account/page.tsx: account overview and user-related actions.
-- pp/admin/orders/page.tsx: admin order management UI.
-- pp/game/page.tsx: claw machine game page.
-- pp/not-found.tsx: custom 404 route fallback.
-- pp/supabase-example/page.tsx: sandbox/example page for Supabase usage.
+1. App Router pages (`app/*`)
+- `app/layout.tsx`: global shell wrapper for providers, background effects, fixed navbar, and main content spacing.
+- `app/globals.css`: global Tailwind and theme-level styles shared across all routes.
+- `app/page.tsx`: homepage entry with hero and featured sections.
+- `app/about/page.tsx`, `app/contact/page.tsx`: static marketing/info pages.
+- `app/products/page.tsx`: product listing page that feeds from Supabase or fallback data.
+- `app/products/[id]/page.tsx`: product detail page per item id with add-to-cart and reviews.
+- `app/cart/page.tsx`: cart page container for cart UI actions.
+- `app/checkout/page.tsx`: checkout page with voucher and order placement flow.
+- `app/auth/page.tsx`: authentication page for sign in/sign up flows.
+- `app/orders/page.tsx`, `app/orders/[id]/page.tsx`: customer order list and individual order status tracking.
+- `app/account/page.tsx`: account overview and user-related actions.
+- `app/admin/orders/page.tsx`: admin order management UI.
+- `app/game/page.tsx`: claw machine game page.
+- `app/not-found.tsx`: custom 404 route fallback.
+- `app/supabase-example/page.tsx`: sandbox/example page for Supabase usage.
 
-2. API routes (pp/api/*)
-- pp/api/orders/route.ts: create/read order requests.
-- pp/api/reviews/route.ts: review submission and retrieval endpoints.
-- pp/api/vouchers/route.ts: voucher issuance/redeem checks.
-- pp/api/game/play/route.ts: game play result handling and reward logic.
-- pp/api/admin/orders/[id]/route.ts: admin-only order status updates.
+2. API routes (`app/api/*`)
+- `app/api/orders/route.ts`: create/read order requests.
+- `app/api/reviews/route.ts`: review submission and retrieval endpoints.
+- `app/api/vouchers/route.ts`: voucher issuance/redeem checks.
+- `app/api/game/play/route.ts`: game play result handling and reward logic.
+- `app/api/admin/orders/[id]/route.ts`: admin-only order status updates.
+- `app/api/reports/route.ts`: bug/feedback report submission, email notification, and optional DB insert.
 - Why these exist: keeps sensitive operations server-side and centralizes business logic.
 
-3. Reusable UI components (components/*)
-- 
-avbar.tsx: fixed responsive navigation for desktop and mobile, auth-aware links, and cart count.
-- hero-section.tsx, section-heading.tsx: reusable homepage/section framing in pixel style.
-- product-grid.tsx, product-card.tsx, dd-to-cart-button.tsx: storefront browsing and add-to-cart flow.
-- product-reviews.tsx: review list and submission UI.
-- cart-view.tsx: line items, quantity controls, totals, and cart actions.
-- checkout-form.tsx: checkout details and voucher application UI.
-- order-list.tsx, order-status-timeline.tsx: order history and progress display.
-- uth-forms.tsx: login/register UI.
-- claw-machine.tsx: mini-game visuals, state transitions, and user actions.
-- dmin-orders-table.tsx: admin order controls and status update interface.
-- providers.tsx: app-wide context composition (auth/cart/toast).
+3. Reusable UI components (`components/*`)
+- `navbar.tsx`: fixed responsive navigation for desktop and mobile, auth-aware links, and cart count.
+- `hero-section.tsx`, `section-heading.tsx`: reusable homepage/section framing in pixel style.
+- `product-grid.tsx`, `product-card.tsx`, `add-to-cart-button.tsx`: storefront browsing and add-to-cart flow.
+- `product-reviews.tsx`: review list and submission UI.
+- `cart-view.tsx`: line items, quantity controls, totals, and cart actions.
+- `checkout-form.tsx`: checkout details and voucher application UI.
+- `order-list.tsx`, `order-status-timeline.tsx`: order history and progress display.
+- `auth-forms.tsx`: login/register UI.
+- `claw-machine.tsx`: mini-game visuals, state transitions, and user actions.
+- `admin-orders-table.tsx`: admin order controls and status update interface.
+- `providers.tsx`: app-wide context composition (auth/cart/toast).
 - Why this structure: keeps page files thin and reuses UI logic consistently.
 
-4. State and hooks (hooks/*)
-- use-auth.tsx: current user/session state and auth change tracking.
-- use-cart.tsx: cart state, storage sync, and cart mutation helpers.
-- use-toast.tsx: transient UI notifications.
+4. State and hooks (`hooks/*`)
+- `use-auth.tsx`: current user/session state and auth change tracking.
+- `use-cart.tsx`: cart state, storage sync, and cart mutation helpers.
+- `use-toast.tsx`: transient UI notifications.
 - Why hooks exist: shared cross-page state and behavior without duplicating logic.
 
-5. Business logic and data helpers (lib/*)
-- products.ts, mock-data.ts: product retrieval and fallback data source.
-- 	ypes.ts: shared TypeScript contracts used across pages/components/api.
-- ormat.ts: currency/date/text format helpers.
-- uth.ts, dmin.ts: auth/admin guard and helper logic.
-- utils.ts: generic utility helpers (class merging, small helpers).
-- supabaseClient.ts and lib/supabase/{client,server,middleware}.ts: Supabase clients for browser, server, and middleware contexts.
+5. Business logic and data helpers (`lib/*`)
+- `products.ts`, `mock-data.ts`: product retrieval and fallback data source.
+- `types.ts`: shared TypeScript contracts used across pages/components/api.
+- `format.ts`: currency/date/text format helpers.
+- `auth.ts`, `admin.ts`: auth/admin guard and helper logic.
+- `utils.ts`: generic utility helpers (class merging, small helpers).
+- `shipping.ts`: checkout validation, Metro Manila/provincial detection, and address normalization helpers.
+- `supabaseClient.ts` and `lib/supabase/{client,server,middleware}.ts`: Supabase clients for browser, server, and middleware contexts.
 - Why this layer exists: isolates business/data logic from presentation components.
 
-6. Data model and SQL (supabase/*)
-- SQL schema, seed, and policy setup for products, carts, orders, reviews, vouchers, and gameplay tables.
+6. Data model and SQL (`supabase/*`)
+- SQL schema, seed, and policy setup for products, carts, orders, reviews, reports, vouchers, and gameplay tables.
 - Why this exists: reproducible backend setup and clear data contract for the app.
 
 7. Navigation behavior architecture (desktop + mobile)
-- Desktop (lg and above): full inline nav remains visible for quick access.
-- Mobile (<lg): hamburger-driven collapsible menu prevents content obstruction.
+- Desktop (`lg` and above): full inline nav remains visible for quick access.
+- Mobile (`<lg`): hamburger-driven collapsible menu prevents content obstruction.
 - Route-change auto-close: ensures menu never stays open after navigation.
 - Why: optimized usability per screen size while preserving one consistent nav system.
 
@@ -282,8 +279,9 @@ avbar.tsx: fixed responsive navigation for desktop and mobile, auth-aware links,
 - Why: fast iteration with consistent brand styling and fewer custom CSS overrides.
 
 10. End-to-end user flow summary
-- Discover products -> add to cart -> authenticate -> checkout with voucher -> track orders -> optionally play game for rewards.
+- Discover products -> add to cart -> authenticate -> checkout with voucher -> track orders -> optionally play game for rewards -> report bugs/feedback when needed.
 - Why this matters: each module is designed to support one connected commerce + game experience.
+
 ## GitHub and Vercel Deploy Checklist
 
 1. Build test from project root:
@@ -400,6 +398,198 @@ Optional server-only key (never expose in public client code):
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
+## Implementation Reference (Code + SQL)
+
+This section documents the exact code and SQL added for:
+- Shipping Address Validation System
+- Bug Report and Feedback System
+
+### 1. Checkout form updates
+
+File: [components/checkout-form.tsx](/C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx)
+
+What was added:
+- Structured shipping fields:
+  - `fullName`, `phoneNumber`, `streetAddress`, `barangay`, `city`, `province`, `postalCode`, `deliveryNotes`
+- Validation before submit using `validateShippingAddress(...)`
+- Delivery estimate preview using `getDeliveryEstimate(province)`
+- Grouped UI sections:
+  - `Shipping Information`
+  - `Delivery Address`
+  - `Delivery Notes`
+
+Why:
+- Prevent incomplete/invalid checkout addresses.
+- Show users expected delivery window instantly.
+- Keep form readable on mobile and desktop.
+
+### 2. Shared shipping validation and estimate logic
+
+File: [lib/shipping.ts](/C:/Users/vinci/Documents/Push2Cart/lib/shipping.ts)
+
+What was added:
+- `validateShippingAddress(input)`
+  - required field checks
+  - PH phone validation (`09XXXXXXXXX` or `+639XXXXXXXXX`)
+  - numeric postal code validation
+- `getDeliveryEstimate(province)`
+  - `Metro Manila` => `2-4 days`
+  - all others => `4-7 days`
+- `buildAddressLine(input)` for legacy/fallback combined address text.
+
+Why:
+- Keep all shipping rules in one reusable place.
+- Use the same logic in UI and API to avoid mismatched behavior.
+
+### 3. Order API validation + storage changes
+
+File: [app/api/orders/route.ts](/C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts)
+
+What was added:
+- Server-side shipping validation (same rules as client).
+- Structured address fields saved into `orders` table:
+  - `phone_number`, `street_address`, `barangay`, `city`, `province`, `postal_code`, `delivery_notes`
+- Fallback `address` string is still saved for compatibility.
+- Delivery estimate returned in response payload.
+
+Why:
+- Server validation protects against bypassing client checks.
+- Structured columns make filtering/reporting/address handling cleaner.
+
+### 4. Order display compatibility updates
+
+Files:
+- [app/orders/[id]/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx)
+- [app/admin/orders/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx)
+- [components/admin-orders-table.tsx](/C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx)
+- [lib/types.ts](/C:/Users/vinci/Documents/Push2Cart/lib/types.ts)
+
+What was added:
+- Types for new structured fields.
+- Display of structured address where available.
+- Fallback to old `address` value for older records.
+- Delivery notes/contact display in order detail.
+
+Why:
+- Prevent breaking older orders after schema changes.
+- Keep admin and customer views consistent.
+
+### 5. Report page UI
+
+File: [app/report/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/report/page.tsx)
+
+What was added:
+- New route: `/report`
+- Form fields:
+  - Name (optional)
+  - Email (optional)
+  - Report Type (`Bug Report`, `Website Feedback`, `Suggestion`)
+  - Message (required)
+- Submit button label: `Send Report`
+- Success message:
+  - `Thanks for the report. We appreciate your feedback.`
+
+Why:
+- Separate bug/feedback reporting from product reviews.
+- Provide a simple public support channel.
+
+### 6. Report API (email + DB)
+
+File: [app/api/reports/route.ts](/C:/Users/vinci/Documents/Push2Cart/app/api/reports/route.ts)
+
+What was added:
+- New endpoint: `POST /api/reports`
+- Input validation:
+  - report type required
+  - message required
+  - email format check when provided
+- Email sending via Resend API:
+  - recipient: `REPORT_RECEIVER_EMAIL` (defaults to `vincetarogpaglicawan@gmail.com`)
+  - subject: `[Push2Cart Report] Bug|Feedback|Suggestion`
+  - body includes report type, name, email, message, timestamp
+- Optional Supabase storage in `reports` table.
+
+Why:
+- Developers get immediate email alerts.
+- Database keeps a searchable issue/feedback history.
+
+### 7. Navigation integration
+
+Files:
+- [components/navbar.tsx](/C:/Users/vinci/Documents/Push2Cart/components/navbar.tsx)
+- [app/contact/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/contact/page.tsx)
+
+What was added:
+- Navbar link: `Report` -> `/report`
+- Contact page CTA: `Open Report Form`
+
+Why:
+- Makes report feature easy to find for users.
+
+### 8. Supabase schema updates
+
+File: [supabase/schema.sql](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql)
+
+Shipping columns added to `orders`:
+```sql
+alter table public.orders add column if not exists phone_number text;
+alter table public.orders add column if not exists street_address text;
+alter table public.orders add column if not exists barangay text;
+alter table public.orders add column if not exists city text;
+alter table public.orders add column if not exists province text;
+alter table public.orders add column if not exists postal_code text;
+alter table public.orders add column if not exists delivery_notes text;
+```
+
+Reports table + policies:
+```sql
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  name text,
+  email text,
+  report_type text not null,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
+create policy "Anyone can submit reports"
+on public.reports
+for insert
+to public
+with check (true);
+
+create policy "Admins can read reports"
+on public.reports
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+```
+
+Why:
+- Shipping columns support structured delivery data.
+- `reports` table captures bug/feedback submissions.
+- Policies allow public inserts while restricting reads to admins.
+
+### 9. Environment variables used by report system
+
+```env
+RESEND_API_KEY=
+REPORT_RECEIVER_EMAIL=vincetarogpaglicawan@gmail.com
+REPORT_FROM_EMAIL="Push2Cart Reports <onboarding@resend.dev>"
+```
+
+Why:
+- `RESEND_API_KEY`: authenticates email send requests.
+- `REPORT_RECEIVER_EMAIL`: developer inbox destination.
+- `REPORT_FROM_EMAIL`: sender identity shown in mailbox.
+
 ## Troubleshooting
 
 1. git is not recognized
@@ -420,4 +610,5 @@ SUPABASE_SERVICE_ROLE_KEY=
 5. Mobile navbar still blocks content
 - Confirm updated components/navbar.tsx is pushed to GitHub.
 - Hard refresh browser (Ctrl+F5) and retest on mobile width.
+
 
