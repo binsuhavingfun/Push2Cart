@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SectionHeading } from "@/components/section-heading";
 
 export default function ContactPage() {
@@ -19,6 +20,17 @@ export default function ContactPage() {
             <p className="mt-3 text-white/75">{value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="pixel-border pixel-panel max-w-3xl p-6">
+        <p className="pixel-heading text-xs text-white">Report an Issue</p>
+        <p className="mt-3 text-white/75">
+          Found a bug or want to send website feedback? Use our report form so the team can review
+          your concern quickly.
+        </p>
+        <Link href="/report" className="pixel-border mt-5 inline-block px-4 py-2 text-xs text-white">
+          Open Report Form
+        </Link>
       </div>
     </div>
   );

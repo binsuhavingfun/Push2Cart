@@ -85,6 +85,23 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  name text,
+  email text,
+  report_type text not null,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.reports add column if not exists user_id uuid references auth.users(id) on delete set null;
+alter table public.reports add column if not exists name text;
+alter table public.reports add column if not exists email text;
+alter table public.reports add column if not exists report_type text;
+alter table public.reports add column if not exists message text;
+alter table public.reports add column if not exists created_at timestamptz not null default now();
+
 alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
 alter table public.orders enable row level security;
@@ -93,6 +110,7 @@ alter table public.vouchers enable row level security;
 alter table public.game_plays enable row level security;
 alter table public.reviews enable row level security;
 alter table public.admin_users enable row level security;
+alter table public.reports enable row level security;
 
 drop policy if exists "Public products are viewable by everyone" on public.products;
 drop policy if exists "Users manage their own cart items" on public.cart_items;
@@ -106,6 +124,8 @@ drop policy if exists "Users manage their own game plays" on public.game_plays;
 drop policy if exists "Anyone can view reviews" on public.reviews;
 drop policy if exists "Authenticated users create reviews" on public.reviews;
 drop policy if exists "Users read own admin row" on public.admin_users;
+drop policy if exists "Anyone can submit reports" on public.reports;
+drop policy if exists "Admins can read reports" on public.reports;
 
 create policy "Public products are viewable by everyone"
 on public.products
@@ -208,6 +228,24 @@ on public.admin_users
 for select
 to authenticated
 using (auth.uid() = user_id);
+
+create policy "Anyone can submit reports"
+on public.reports
+for insert
+to public
+with check (true);
+
+create policy "Admins can read reports"
+on public.reports
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
 
 insert into public.products (id, name, description, price, image_url, stock)
 values

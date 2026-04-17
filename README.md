@@ -6,6 +6,10 @@ Motto: `Play. Shop. Save.`
 
 Subtext: `Your cart just got more fun.`
 
+## Platform Overview
+
+Push2Cart, based in the Philippines, keeps shopping smooth while adding playful reward moments. Our pixel-style interface stays focused and readable, so if users ask, “paano naman sa mobile?”, the experience is still clear, and if something feels “over naman sa ask,” they can quickly send bug reports or website feedback through the built-in report feature.
+
 ## Features
 
 - Homepage hero with pixel-art branding and dual CTAs
@@ -361,23 +365,40 @@ Migration/update instructions:
 2. Run the latest [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart-git/supabase/schema.sql) to ensure new address columns exist.
 3. Existing orders remain compatible because legacy `address` is still retained for fallback display.
 
+## Bug Report and Feedback System
 
+Users can report bugs or submit website feedback using the **Report an Issue** page.
 
+- Reports are sent to: `vincetarogpaglicawan@gmail.com`
+- A report may include: name, email, report type, and message
+- Reports are stored in the database under the `reports` table
+- This feature helps improve usability and detect issues early
+- Implemented routes:
+  - Page: `/report`
+  - API: `POST /api/reports`
+- Contact page includes a direct shortcut to the report form
+- To enable storage, run the latest [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) in Supabase SQL Editor
+- Email notifications are sent via Resend API in the server route
+- Email payload includes report type, name, email, message, and timestamp
+- Email subject format: `[Push2Cart Report] Bug / Feedback / Suggestion`
 
 ## .env.local.example Keys
 
 Use this as a safe template (keys only, no real secrets):
 
-`env
+```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-`
+RESEND_API_KEY=
+REPORT_RECEIVER_EMAIL=vincetarogpaglicawan@gmail.com
+REPORT_FROM_EMAIL="Push2Cart Reports <onboarding@resend.dev>"
+```
 
 Optional server-only key (never expose in public client code):
 
-`env
+```env
 SUPABASE_SERVICE_ROLE_KEY=
-`
+```
 
 ## Troubleshooting
 
