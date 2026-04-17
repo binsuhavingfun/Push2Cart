@@ -1,4 +1,4 @@
-import { SectionHeading } from "@/components/section-heading";
+﻿import { SectionHeading } from "@/components/section-heading";
 
 export default function AboutPage() {
   return (
@@ -6,7 +6,7 @@ export default function AboutPage() {
       <SectionHeading
         eyebrow="About"
         title="Commerce With Arcade Energy"
-        description="Push2Cart blends a clean shopping journey with playful reward moments. The pixel treatment stays focused on interactive elements, keeping the UI readable on mobile while still feeling distinct."
+        description="Push2Cart offers a simple shopping experience with fun reward moments along the way. The pixel-style design stays focused on useful interactions so everything remains clear and easy to use—paano naman sa mobile? Smooth din. Built in the Philippines, Push2Cart keeps things playful without being over naman sa ask for everyday use."
       />
       <div className="pixel-border pixel-panel max-w-4xl p-6 text-white/80">
         <p>
@@ -18,3 +18,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

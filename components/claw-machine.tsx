@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type RewardResult = {
   code: string;
@@ -8,14 +8,11 @@ type RewardResult = {
   rarity: "common" | "rare";
 };
 
-const capsules = [
-  "Speed",
-  "Lucky",
-  "Bonus",
-  "Prime",
-  "Flash",
-  "Boost"
-];
+const capsules = ["Speed", "Lucky", "Bonus", "Prime", "Flash", "Boost"];
+const SWEEP_MIN_X = -120;
+const SWEEP_MAX_X = 120;
+const SWEEP_DURATION_MS = 1500;
+const PRE_DROP_PAUSE_MS = 280;
 
 export function ClawMachine({
   initialPlaysLeft,
@@ -24,13 +21,42 @@ export function ClawMachine({
   initialPlaysLeft: number;
   userId: string;
 }) {
-  const [phase, setPhase] = useState<"idle" | "drop" | "grab" | "shake" | "return">("idle");
+  const [phase, setPhase] = useState<"idle" | "sweep" | "drop" | "grab" | "shake" | "return">("idle");
   const [message, setMessage] = useState("Drop the claw and try your luck.");
   const [playsLeft, setPlaysLeft] = useState(initialPlaysLeft);
   const [loading, setLoading] = useState(false);
+  const [clawOffset, setClawOffset] = useState(0);
+  const sweepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRefs = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
-  const playTone = (frequency: number, duration = 0.12) => {
-    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  const queueTimeout = (callback: () => void, delay: number) => {
+    const timeoutId = setTimeout(callback, delay);
+    timeoutRefs.current.push(timeoutId);
+  };
+
+  const clearAnimationTimers = () => {
+    if (sweepIntervalRef.current) {
+      clearInterval(sweepIntervalRef.current);
+      sweepIntervalRef.current = null;
+    }
+
+    timeoutRefs.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    timeoutRefs.current = [];
+  };
+
+  useEffect(() => {
+    return () => {
+      clearAnimationTimers();
+    };
+  }, []);
+
+  const randomSweepOffset = () =>
+    Math.floor(Math.random() * (SWEEP_MAX_X - SWEEP_MIN_X + 1)) + SWEEP_MIN_X;
+
+  const playTone = (frequency: number, duration = 0.12, type: OscillatorType = "square") => {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) {
       return;
     }
@@ -38,37 +64,78 @@ export function ClawMachine({
     const audioContext = new AudioCtx();
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    oscillator.type = "square";
+
+    oscillator.type = type;
     oscillator.frequency.value = frequency;
     gain.gain.value = 0.05;
+
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
+
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
+
+    queueTimeout(() => {
+      void audioContext.close();
+    }, Math.ceil(duration * 1000) + 80);
   };
 
-  const playSequence = (type: "start" | "drop" | "win" | "lose" | "gameover") => {
+  const playSequence = (type: "start" | "drop" | "lose" | "gameover") => {
     if (type === "start") {
       playTone(520);
-      setTimeout(() => playTone(660), 120);
+      queueTimeout(() => playTone(660), 120);
       return;
     }
+
     if (type === "drop") {
       playTone(320, 0.16);
       return;
     }
-    if (type === "win") {
-      playTone(740, 0.12);
-      setTimeout(() => playTone(880, 0.12), 140);
-      setTimeout(() => playTone(1040, 0.16), 280);
-      return;
-    }
+
     if (type === "lose") {
       playTone(280, 0.2);
-      setTimeout(() => playTone(220, 0.2), 160);
+      queueTimeout(() => playTone(220, 0.2), 160);
       return;
     }
+
     playTone(180, 0.35);
+  };
+
+  // Non-copyright custom generated arcade win sound.
+  const playWinJingle = () => {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) {
+      return;
+    }
+
+    const audioContext = new AudioCtx();
+    const now = audioContext.currentTime;
+    const notes = [784, 988, 1175, 1568];
+
+    notes.forEach((frequency, index) => {
+      const start = now + index * 0.1;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      oscillator.type = "triangle";
+      oscillator.frequency.setValueAtTime(frequency, start);
+
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.08, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.14);
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+
+      oscillator.start(start);
+      oscillator.stop(start + 0.16);
+    });
+
+    queueTimeout(() => {
+      void audioContext.close();
+    }, 900);
   };
 
   const clawTransformClass = (() => {
@@ -83,15 +150,35 @@ export function ClawMachine({
       return;
     }
 
+    clearAnimationTimers();
     setLoading(true);
+    setPhase("sweep");
+    setMessage("Claw is scanning left and right...");
     playSequence("start");
-    setPhase("drop");
-    setMessage("Claw is moving...");
-    setTimeout(() => playSequence("drop"), 520);
 
-    setTimeout(() => setPhase("grab"), 780);
-    setTimeout(() => setPhase("shake"), 1160);
-    setTimeout(() => setPhase("return"), 1550);
+    setClawOffset(randomSweepOffset());
+    sweepIntervalRef.current = setInterval(() => {
+      setClawOffset(randomSweepOffset());
+    }, 360);
+
+    queueTimeout(() => {
+      if (sweepIntervalRef.current) {
+        clearInterval(sweepIntervalRef.current);
+        sweepIntervalRef.current = null;
+      }
+
+      setMessage("Target locked...");
+
+      queueTimeout(() => {
+        setPhase("drop");
+        setMessage("Claw is dropping...");
+        playSequence("drop");
+      }, PRE_DROP_PAUSE_MS);
+    }, SWEEP_DURATION_MS);
+
+    queueTimeout(() => setPhase("grab"), SWEEP_DURATION_MS + PRE_DROP_PAUSE_MS + 520);
+    queueTimeout(() => setPhase("shake"), SWEEP_DURATION_MS + PRE_DROP_PAUSE_MS + 900);
+    queueTimeout(() => setPhase("return"), SWEEP_DURATION_MS + PRE_DROP_PAUSE_MS + 1280);
 
     const response = await fetch("/api/game/play", {
       method: "POST",
@@ -110,13 +197,13 @@ export function ClawMachine({
       reward?: RewardResult | null;
     };
 
-    setTimeout(() => {
+    queueTimeout(() => {
       if (!response.ok) {
         playSequence("lose");
         setMessage(payload.error ?? "Claw jammed. Try again soon.");
       } else if (payload.didWin && payload.reward) {
         const reward = payload.reward;
-        playSequence("win");
+        playWinJingle();
         setMessage(
           `${reward.rarity === "rare" ? "Jackpot" : "Win"}: ${reward.discountPercent}% off with code ${reward.code}`
         );
@@ -125,10 +212,11 @@ export function ClawMachine({
         setMessage("No reward this round. Try again on your next play.");
       }
 
-      setPlaysLeft(payload.playsLeft ?? Math.max(playsLeft - 1, 0));
+      setPlaysLeft((current) => payload.playsLeft ?? Math.max(current - 1, 0));
       setPhase("idle");
+      setClawOffset(0);
       setLoading(false);
-    }, 2180);
+    }, SWEEP_DURATION_MS + PRE_DROP_PAUSE_MS + 2100);
   };
 
   return (
@@ -140,7 +228,8 @@ export function ClawMachine({
           <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_10%,hsl(0_0%_100%/0.16)_20%,transparent_32%)] animate-[pulse_2.2s_ease-in-out_infinite]" />
           <div className="absolute left-1/2 top-0 h-20 w-3 -translate-x-1/2 bg-secondary/80 shadow-[0_0_14px_hsl(180_100%_50%/0.7)]" />
           <div
-            className={`absolute left-1/2 top-8 flex h-20 w-16 -translate-x-1/2 items-end justify-center transition-transform duration-700 ${clawTransformClass} ${phase === "shake" ? "animate-[wiggle_0.18s_linear_4]" : ""}`}
+            className={`absolute left-1/2 top-8 flex h-20 w-16 -translate-x-1/2 items-end justify-center transition-[transform,margin] duration-300 ease-in-out ${clawTransformClass} ${phase === "shake" ? "animate-[wiggle_0.18s_linear_4]" : ""}`}
+            style={{ marginLeft: `${clawOffset}px` }}
           >
             <div className="relative h-12 w-12">
               <span className="absolute left-1/2 top-0 h-8 w-[2px] -translate-x-1/2 bg-white" />

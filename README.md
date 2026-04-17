@@ -8,7 +8,11 @@ Subtext: `Your cart just got more fun.`
 
 ## Platform Overview
 
-Push2Cart, based in the Philippines, keeps shopping smooth while adding playful reward moments. Our pixel-style interface stays focused and readable, so if users ask, “paano naman sa mobile?”, the experience is still clear, and if something feels “over naman sa ask,” they can quickly send bug reports or website feedback through the built-in report feature.
+Push2Cart offers a simple shopping experience with fun reward moments along the way. The pixel-style design stays focused on useful interactions so everything remains clear and easy to use—paano naman sa mobile? Smooth din. Built in the Philippines, Push2Cart keeps things playful without being over naman sa ask for everyday use.
+
+## Homepage Featured Description
+
+A selection of gear you can easily check out and add to your setup. Everything stays simple and fun to explore without being over naman sa ask.
 
 ## Features
 
@@ -590,6 +594,15 @@ Why:
 - `REPORT_RECEIVER_EMAIL`: developer inbox destination.
 - `REPORT_FROM_EMAIL`: sender identity shown in mailbox.
 
+## Claw Machine Behavior Update
+
+- Before dropping, the claw now moves left-right automatically across the machine.
+- Horizontal movement updates smoothly and picks random positions within allowed bounds.
+- After a short pause, the claw drops vertically from its current horizontal position.
+- Existing win/lose reward logic is unchanged.
+- A custom non-copyright arcade-style win jingle plays only when a reward is confirmed.
+- Lose states do not trigger the win jingle.
+
 ## Troubleshooting
 
 1. git is not recognized
@@ -610,5 +623,6 @@ Why:
 5. Mobile navbar still blocks content
 - Confirm updated components/navbar.tsx is pushed to GitHub.
 - Hard refresh browser (Ctrl+F5) and retest on mobile width.
+
 
 
