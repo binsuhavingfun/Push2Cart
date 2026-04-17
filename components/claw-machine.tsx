@@ -72,6 +72,9 @@ export function ClawMachine({
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]
     }));
 
+  const getRewardLabel = (reward: RewardResult) =>
+    `${reward.discountPercent}% Off Voucher`;
+
   const wait = (ms: number) =>
     new Promise<void>((resolve) => {
       const timeoutId = setTimeout(resolve, ms);
@@ -372,8 +375,20 @@ export function ClawMachine({
             ))}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-black/30" />
+          {revealedReward ? (
+            <div className="pointer-events-none absolute inset-x-3 top-16 z-30 flex justify-center sm:inset-x-6 sm:top-14">
+              <div className="w-full max-w-[290px] border border-accent/60 bg-background/85 px-4 py-3 text-center shadow-[0_0_20px_hsl(45_100%_55%/0.25)] backdrop-blur-sm">
+                <p className="pixel-heading text-[11px] text-accent">Congratulations! You got a reward!</p>
+                <p className="mt-1 text-[11px] text-white/90">
+                  You got: {getRewardLabel(revealedReward)}
+                </p>
+                <p className="mt-1 text-[10px] text-white/70">Voucher Code: {revealedReward.code}</p>
+                <p className="mt-1 text-[10px] lowercase tracking-[0.1em] text-secondary">yay</p>
+              </div>
+            </div>
+          ) : null}
           {showConfetti ? (
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
               {confettiPieces.map((piece, index) => (
                 <span
                   // eslint-disable-next-line react/no-array-index-key
@@ -445,11 +460,6 @@ export function ClawMachine({
         </button>
 
         <p className="mt-6 text-sm text-secondary">{message}</p>
-        {revealedReward ? (
-          <div className="mt-4 border border-accent/40 bg-accent/15 px-4 py-3 text-sm text-white">
-            Reward Revealed: {revealedReward.discountPercent}% off ({revealedReward.code})
-          </div>
-        ) : null}
         <p className="mt-3 text-xs text-white/60">Sound effects are generated in-browser with Web Audio.</p>
       </aside>
       <style jsx>{`

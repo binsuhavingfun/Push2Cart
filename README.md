@@ -600,10 +600,14 @@ Why:
 - The player controls when to drop by pressing the `Drop Claw` button.
 - On button press, horizontal movement locks, then the claw pauses briefly and drops from its current position.
 - The sequence continues with grab, lift, short suspense pause, and then result reveal while keeping the existing win/lose logic.
-- Reward is revealed only after a successful catch and lift completion to improve suspense and realism.
+- The prize now appears inside the claw machine screen only after a successful catch and lift completion to improve suspense and realism.
+- The exact reward won is shown clearly to the player (voucher value/label and voucher code).
+- A congratulations message and a small `yay` text appear only after a successful win.
 - A lightweight confetti effect appears only on confirmed wins.
 - A custom non-copyright arcade-style win jingle plays only when the reward is revealed.
-- Lose states do not trigger reward reveal, confetti, or win jingle.
+- A short non-copyright sad loss sound plays only on confirmed losses.
+- Lose states do not trigger reward reveal, congratulations text, `yay`, confetti, or win jingle.
+- All result feedback is timed to appear only after the animation sequence finishes.
 - The updated behavior is tuned for both desktop and mobile interactions.
 - Mobile layout was improved so players can see the claw gameplay area and `Drop Claw` controls together without needing to scroll during active play.
 
