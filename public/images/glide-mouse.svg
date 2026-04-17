@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#1A1F35"/>
+  <rect x="270" y="140" width="260" height="340" rx="130" fill="#D92AA0"/>
+  <line x1="400" y1="170" x2="400" y2="290" stroke="#FFFFFF" stroke-width="10"/>
+  <circle cx="400" cy="320" r="15" fill="#2EEAD8"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Glide Mouse</text>
+</svg>

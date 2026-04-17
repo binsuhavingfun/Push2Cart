@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#101B31"/>
+  <rect x="180" y="200" width="440" height="220" rx="30" fill="#2EEAD8"/>
+  <circle cx="300" cy="310" r="55" fill="#D92AA0"/>
+  <circle cx="500" cy="310" r="55" fill="#D92AA0"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Chill Pad</text>
+</svg>

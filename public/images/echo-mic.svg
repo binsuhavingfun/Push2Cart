@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#162032"/>
+  <rect x="320" y="140" width="160" height="230" rx="80" fill="#2EEAD8"/>
+  <rect x="370" y="360" width="60" height="90" fill="#D92AA0"/>
+  <rect x="300" y="450" width="200" height="26" fill="#FDE047"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Echo Mic</text>
+</svg>

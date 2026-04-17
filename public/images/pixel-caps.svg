@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#16162A"/>
+  <rect x="150" y="170" width="500" height="260" fill="#2EEAD8"/>
+  <g fill="#D92AA0">
+    <rect x="190" y="210" width="90" height="80"/>
+    <rect x="300" y="210" width="90" height="80"/>
+    <rect x="410" y="210" width="90" height="80"/>
+    <rect x="520" y="210" width="90" height="80"/>
+    <rect x="245" y="310" width="90" height="80"/>
+    <rect x="355" y="310" width="90" height="80"/>
+    <rect x="465" y="310" width="90" height="80"/>
+  </g>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Pixel Caps</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#101827"/>
+  <path d="M220 280 C220 160 310 100 400 100 C490 100 580 160 580 280" stroke="#2EEAD8" stroke-width="30" fill="none"/>
+  <rect x="210" y="260" width="90" height="170" rx="20" fill="#D92AA0"/>
+  <rect x="500" y="260" width="90" height="170" rx="20" fill="#D92AA0"/>
+  <rect x="530" y="400" width="120" height="20" rx="10" fill="#FDE047"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Wave Headset</text>
+</svg>

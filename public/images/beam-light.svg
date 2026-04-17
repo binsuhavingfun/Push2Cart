@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#131A24"/>
+  <circle cx="400" cy="250" r="130" fill="#FDE047"/>
+  <path d="M260 380 L540 380 L620 500 L180 500 Z" fill="#2EEAD8"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Beam Light</text>
+</svg>

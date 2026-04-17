@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#121223"/>
+  <rect x="120" y="180" width="560" height="280" fill="#2EEAD8"/>
+  <g stroke="#D92AA0" stroke-width="6">
+    <line x1="180" y1="180" x2="180" y2="460"/>
+    <line x1="260" y1="180" x2="260" y2="460"/>
+    <line x1="340" y1="180" x2="340" y2="460"/>
+    <line x1="420" y1="180" x2="420" y2="460"/>
+    <line x1="500" y1="180" x2="500" y2="460"/>
+    <line x1="580" y1="180" x2="580" y2="460"/>
+    <line x1="120" y1="240" x2="680" y2="240"/>
+    <line x1="120" y1="300" x2="680" y2="300"/>
+    <line x1="120" y1="360" x2="680" y2="360"/>
+    <line x1="120" y1="420" x2="680" y2="420"/>
+  </g>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Grid Pad</text>
+</svg>

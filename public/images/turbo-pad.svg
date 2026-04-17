@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#1A1232"/>
+  <rect x="170" y="180" width="460" height="230" rx="120" fill="#D92AA0"/>
+  <circle cx="300" cy="295" r="35" fill="#FDE047"/>
+  <circle cx="500" cy="265" r="22" fill="#2EEAD8"/>
+  <circle cx="550" cy="305" r="22" fill="#2EEAD8"/>
+  <circle cx="450" cy="305" r="22" fill="#2EEAD8"/>
+  <rect x="365" y="270" width="70" height="20" fill="#FFFFFF"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Turbo Pad</text>
+</svg>

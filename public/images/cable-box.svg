@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#191D2E"/>
+  <rect x="200" y="220" width="400" height="210" rx="20" fill="#2EEAD8"/>
+  <path d="M200 260 L600 260" stroke="#D92AA0" stroke-width="8"/>
+  <path d="M260 220 C260 150 330 150 330 220" stroke="#FDE047" stroke-width="10" fill="none"/>
+  <path d="M470 220 C470 150 540 150 540 220" stroke="#FDE047" stroke-width="10" fill="none"/>
+  <text x="400" y="560" font-size="48" text-anchor="middle" fill="#FFFFFF" font-family="Verdana">Cable Box</text>
+</svg>
