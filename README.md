@@ -1,4 +1,4 @@
-# Push2Cart
+﻿# Push2Cart
 
 Push2Cart is a retro pixel-art e-commerce app built with Next.js App Router, TypeScript, Tailwind CSS v4, and Supabase.
 
@@ -66,6 +66,16 @@ npm run dev
 ```
 
 6. Open [http://localhost:3000](http://localhost:3000).
+## Available Scripts
+
+- 
+pm run dev: start local development server.
+- 
+pm run build: create production build (recommended before deploy).
+- 
+pm start: run production server after build (if configured in your project).
+- 
+pm run lint: run lint checks (if configured in your project).
 
 ## Supabase Setup Guide
 
@@ -186,6 +196,90 @@ This section explains `components/navbar.tsx` block by block and why each part e
 - Menu auto-closes on route change and link taps.
 - Content stays readable when menu is closed.
 
+
+## Complete Code Walkthrough
+
+This section explains the role of each major code area and why it is implemented that way.
+
+1. App Router pages (pp/*)
+- pp/layout.tsx: global shell wrapper for providers, background effects, fixed navbar, and main content spacing.
+- pp/globals.css: global Tailwind and theme-level styles shared across all routes.
+- pp/page.tsx: homepage entry with hero and featured sections.
+- pp/about/page.tsx, pp/contact/page.tsx: static marketing/info pages.
+- pp/products/page.tsx: product listing page that feeds from Supabase or fallback data.
+- pp/products/[id]/page.tsx: product detail page per item id with add-to-cart and reviews.
+- pp/cart/page.tsx: cart page container for cart UI actions.
+- pp/checkout/page.tsx: checkout page with voucher and order placement flow.
+- pp/auth/page.tsx: authentication page for sign in/sign up flows.
+- pp/orders/page.tsx, pp/orders/[id]/page.tsx: customer order list and individual order status tracking.
+- pp/account/page.tsx: account overview and user-related actions.
+- pp/admin/orders/page.tsx: admin order management UI.
+- pp/game/page.tsx: claw machine game page.
+- pp/not-found.tsx: custom 404 route fallback.
+- pp/supabase-example/page.tsx: sandbox/example page for Supabase usage.
+
+2. API routes (pp/api/*)
+- pp/api/orders/route.ts: create/read order requests.
+- pp/api/reviews/route.ts: review submission and retrieval endpoints.
+- pp/api/vouchers/route.ts: voucher issuance/redeem checks.
+- pp/api/game/play/route.ts: game play result handling and reward logic.
+- pp/api/admin/orders/[id]/route.ts: admin-only order status updates.
+- Why these exist: keeps sensitive operations server-side and centralizes business logic.
+
+3. Reusable UI components (components/*)
+- 
+avbar.tsx: fixed responsive navigation for desktop and mobile, auth-aware links, and cart count.
+- hero-section.tsx, section-heading.tsx: reusable homepage/section framing in pixel style.
+- product-grid.tsx, product-card.tsx, dd-to-cart-button.tsx: storefront browsing and add-to-cart flow.
+- product-reviews.tsx: review list and submission UI.
+- cart-view.tsx: line items, quantity controls, totals, and cart actions.
+- checkout-form.tsx: checkout details and voucher application UI.
+- order-list.tsx, order-status-timeline.tsx: order history and progress display.
+- uth-forms.tsx: login/register UI.
+- claw-machine.tsx: mini-game visuals, state transitions, and user actions.
+- dmin-orders-table.tsx: admin order controls and status update interface.
+- providers.tsx: app-wide context composition (auth/cart/toast).
+- Why this structure: keeps page files thin and reuses UI logic consistently.
+
+4. State and hooks (hooks/*)
+- use-auth.tsx: current user/session state and auth change tracking.
+- use-cart.tsx: cart state, storage sync, and cart mutation helpers.
+- use-toast.tsx: transient UI notifications.
+- Why hooks exist: shared cross-page state and behavior without duplicating logic.
+
+5. Business logic and data helpers (lib/*)
+- products.ts, mock-data.ts: product retrieval and fallback data source.
+- 	ypes.ts: shared TypeScript contracts used across pages/components/api.
+- ormat.ts: currency/date/text format helpers.
+- uth.ts, dmin.ts: auth/admin guard and helper logic.
+- utils.ts: generic utility helpers (class merging, small helpers).
+- supabaseClient.ts and lib/supabase/{client,server,middleware}.ts: Supabase clients for browser, server, and middleware contexts.
+- Why this layer exists: isolates business/data logic from presentation components.
+
+6. Data model and SQL (supabase/*)
+- SQL schema, seed, and policy setup for products, carts, orders, reviews, vouchers, and gameplay tables.
+- Why this exists: reproducible backend setup and clear data contract for the app.
+
+7. Navigation behavior architecture (desktop + mobile)
+- Desktop (lg and above): full inline nav remains visible for quick access.
+- Mobile (<lg): hamburger-driven collapsible menu prevents content obstruction.
+- Route-change auto-close: ensures menu never stays open after navigation.
+- Why: optimized usability per screen size while preserving one consistent nav system.
+
+8. Auth and role-based UI behavior
+- Signed-out users see login action.
+- Signed-in users see account/orders/logout actions.
+- Admin users additionally see admin navigation/action links.
+- Why: keeps UI aligned to permissions and avoids exposing admin controls broadly.
+
+9. Styling system and design consistency
+- Tailwind utility classes drive responsive layout and spacing.
+- Pixel theme classes preserve visual identity across components.
+- Why: fast iteration with consistent brand styling and fewer custom CSS overrides.
+
+10. End-to-end user flow summary
+- Discover products -> add to cart -> authenticate -> checkout with voucher -> track orders -> optionally play game for rewards.
+- Why this matters: each module is designed to support one connected commerce + game experience.
 ## GitHub and Vercel Deploy Checklist
 
 1. Build test from project root:
@@ -215,4 +309,41 @@ git push origin main
 - If env values are changed in Vercel, redeploy before retesting.
 
 
+
+
+## .env.local.example Keys
+
+Use this as a safe template (keys only, no real secrets):
+
+`env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+`
+
+Optional server-only key (never expose in public client code):
+
+`env
+SUPABASE_SERVICE_ROLE_KEY=
+`
+
+## Troubleshooting
+
+1. git is not recognized
+- Install Git for Windows, reopen terminal, then run git --version.
+
+2. Build fails on Vercel
+- Check Deployments -> latest deploy -> Build Logs.
+- Fix the first error shown, commit, and redeploy.
+
+3. Supabase connection/auth not working
+- Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set correctly in Vercel.
+- Ensure values are added to the correct environments (Production, Preview, Development).
+
+4. Images not showing in production
+- Ensure assets are in public/ and referenced as /images/....
+- Confirm file names and casing match exactly.
+
+5. Mobile navbar still blocks content
+- Confirm updated components/navbar.tsx is pushed to GitHub.
+- Hard refresh browser (Ctrl+F5) and retest on mobile width.
 
