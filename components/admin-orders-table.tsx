@@ -8,6 +8,11 @@ type AdminOrder = {
   id: string;
   full_name: string | null;
   address: string;
+  street_address?: string | null;
+  barangay?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
   total_price: number;
   status: OrderStatus;
   created_at: string;
@@ -83,6 +88,20 @@ export function AdminOrdersTable({ initialOrders }: { initialOrders: AdminOrder[
     return statusMatches && dateMatches;
   });
 
+  const formatAddress = (order: AdminOrder) => {
+    const structured = [
+      order.street_address,
+      order.barangay,
+      order.city,
+      order.province,
+      order.postal_code
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return structured || order.address;
+  };
+
   return (
     <div className="pixel-border pixel-panel p-6">
       {message ? <p className="mb-4 text-sm text-secondary">{message}</p> : null}
@@ -128,7 +147,7 @@ export function AdminOrdersTable({ initialOrders }: { initialOrders: AdminOrder[
               <tr key={order.id} className="border-t border-white/10">
                 <td className="py-3">{order.id.slice(0, 8)}</td>
                 <td className="py-3">{order.full_name ?? "Customer"}</td>
-                <td className="py-3">{order.address}</td>
+                <td className="py-3">{formatAddress(order)}</td>
                 <td className="py-3">PHP {Number(order.total_price).toFixed(2)}</td>
                 <td className="py-3">
                   <select

@@ -28,8 +28,23 @@ create table if not exists public.orders (
   created_at timestamptz not null default now(),
   address text not null,
   phone text,
-  full_name text
+  full_name text,
+  phone_number text,
+  street_address text,
+  barangay text,
+  city text,
+  province text,
+  postal_code text,
+  delivery_notes text
 );
+
+alter table public.orders add column if not exists phone_number text;
+alter table public.orders add column if not exists street_address text;
+alter table public.orders add column if not exists barangay text;
+alter table public.orders add column if not exists city text;
+alter table public.orders add column if not exists province text;
+alter table public.orders add column if not exists postal_code text;
+alter table public.orders add column if not exists delivery_notes text;
 
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),

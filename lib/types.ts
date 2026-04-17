@@ -37,6 +37,13 @@ export type Order = {
   address: string;
   phone?: string | null;
   full_name?: string | null;
+  phone_number?: string | null;
+  street_address?: string | null;
+  barangay?: string | null;
+  city?: string | null;
+  province?: string | null;
+  postal_code?: string | null;
+  delivery_notes?: string | null;
 };
 
 export type Voucher = {

@@ -3,6 +3,7 @@ import { OrderStatusTimeline } from "@/components/order-status-timeline";
 import { formatCurrency } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
 import type { Order, Product } from "@/lib/types";
+import { getDeliveryEstimate } from "@/lib/shipping";
 
 type OrderItemRow = {
   id: string;
@@ -36,8 +37,20 @@ export default async function OrderDetailPage({
     .eq("order_id", id);
 
   const typedOrder = order as Order;
-  const normalizedAddress = typedOrder.address.toLowerCase();
-  const region = normalizedAddress.includes("metro manila") ? "Metro" : "Provincial";
+  const fullAddress = [
+    typedOrder.street_address,
+    typedOrder.barangay,
+    typedOrder.city,
+    typedOrder.province,
+    typedOrder.postal_code
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const shippingAddress = fullAddress || typedOrder.address;
+  const derivedProvince =
+    typedOrder.province ??
+    (typedOrder.address.toLowerCase().includes("metro manila") ? "Metro Manila" : "");
+  const region = getDeliveryEstimate(derivedProvince).regionType === "metro" ? "Metro" : "Provincial";
 
   return (
     <div className="space-y-8">
@@ -45,8 +58,14 @@ export default async function OrderDetailPage({
         <p className="pixel-heading text-xs text-secondary">Order #{typedOrder.id.slice(0, 8)}</p>
         <h1 className="pixel-heading mt-4 text-xl text-white">Shipment Status</h1>
         <p className="mt-3 text-white/75">
-          Shipping to {typedOrder.full_name} at {typedOrder.address}
+          Shipping to {typedOrder.full_name} at {shippingAddress}
         </p>
+        {typedOrder.phone_number || typedOrder.phone ? (
+          <p className="mt-2 text-sm text-white/65">Contact: {typedOrder.phone_number ?? typedOrder.phone}</p>
+        ) : null}
+        {typedOrder.delivery_notes ? (
+          <p className="mt-2 text-sm text-white/65">Delivery notes: {typedOrder.delivery_notes}</p>
+        ) : null}
       </div>
       <OrderStatusTimeline status={typedOrder.status} region={region} />
       <div className="pixel-border pixel-panel p-6">

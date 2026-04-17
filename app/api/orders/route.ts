@@ -1,11 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/types";
+import {
+  buildAddressLine,
+  getDeliveryEstimate,
+  normalizeShippingAddress,
+  validateShippingAddress
+} from "@/lib/shipping";
 
 type OrderPayload = {
   fullName: string;
-  address: string;
   phone: string;
+  streetAddress: string;
+  barangay: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  deliveryNotes?: string;
   items: CartItem[];
   voucherId?: string | null;
 };
@@ -29,9 +40,28 @@ export async function POST(request: Request) {
   }
 
   const payload = (await request.json()) as OrderPayload;
+  const normalizedAddress = normalizeShippingAddress({
+    fullName: payload.fullName,
+    phoneNumber: payload.phone,
+    streetAddress: payload.streetAddress,
+    barangay: payload.barangay,
+    city: payload.city,
+    province: payload.province,
+    postalCode: payload.postalCode,
+    deliveryNotes: payload.deliveryNotes ?? ""
+  });
+  const addressErrors = validateShippingAddress(normalizedAddress);
 
   if (!payload.items?.length) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
+  }
+
+  if (Object.keys(addressErrors).length > 0) {
+    const firstError = Object.values(addressErrors)[0];
+    return NextResponse.json(
+      { error: firstError ?? "Please enter a valid shipping address.", validationErrors: addressErrors },
+      { status: 400 }
+    );
   }
 
   const calculatedSubtotal = payload.items.reduce(
@@ -63,15 +93,24 @@ export async function POST(request: Request) {
   const discountAmount = calculatedSubtotal * (discountPercent / 100);
   const finalTotal = Math.max(calculatedSubtotal - discountAmount, 0);
 
+  const estimatedDelivery = getDeliveryEstimate(normalizedAddress.province);
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
       user_id: user.id,
       status: "Order Placed",
       total_price: finalTotal,
-      address: payload.address,
-      phone: payload.phone,
-      full_name: payload.fullName
+      address: buildAddressLine(normalizedAddress),
+      phone: normalizedAddress.phoneNumber,
+      full_name: normalizedAddress.fullName,
+      phone_number: normalizedAddress.phoneNumber,
+      street_address: normalizedAddress.streetAddress,
+      barangay: normalizedAddress.barangay,
+      city: normalizedAddress.city,
+      province: normalizedAddress.province,
+      postal_code: normalizedAddress.postalCode,
+      delivery_notes: normalizedAddress.deliveryNotes
     })
     .select("id")
     .single();
@@ -108,5 +147,9 @@ export async function POST(request: Request) {
 
   await supabase.from("cart_items").delete().eq("user_id", user.id);
 
-  return NextResponse.json({ orderId: order.id });
+  return NextResponse.json({
+    orderId: order.id,
+    estimatedDeliveryDays: estimatedDelivery.days,
+    estimatedDeliveryArea: estimatedDelivery.areaLabel
+  });
 }

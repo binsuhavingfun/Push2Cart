@@ -308,6 +308,59 @@ git push origin main
 - Do not expose service keys in `NEXT_PUBLIC_*` variables.
 - If env values are changed in Vercel, redeploy before retesting.
 
+## Shipping Address Validation System
+
+Checkout now uses structured shipping fields and basic validation before an order can be submitted.
+
+Required fields:
+- `full_name`
+- `phone_number`
+- `street_address`
+- `barangay`
+- `city`
+- `province`
+- `postal_code`
+
+Optional field:
+- `delivery_notes`
+
+Validation rules:
+- City must not be empty.
+- Province must not be empty.
+- Postal code must be numeric only.
+- Phone number must match PH format:
+  - `09XXXXXXXXX`
+  - `+639XXXXXXXXX`
+
+Validation messages are shown inline in checkout (example: `Please enter a valid barangay.`).
+
+Metro Manila vs provincial delivery detection:
+- If `province` equals `Metro Manila` (case-insensitive), estimate is `2-4 days`.
+- Otherwise estimate is `4-7 days`.
+
+Checkout shows this immediately after province input:
+- `Estimated delivery: 2-4 days (Metro Manila)`
+- or `Estimated delivery: 4-7 days (Provincial area)`
+
+Delivery notes:
+- Checkout includes an optional notes field for landmark/gate instructions.
+- Saved to Supabase as `delivery_notes`.
+
+Supabase storage (orders table):
+- `full_name`
+- `phone_number`
+- `street_address`
+- `barangay`
+- `city`
+- `province`
+- `postal_code`
+- `delivery_notes`
+
+Migration/update instructions:
+1. Open Supabase SQL Editor.
+2. Run the latest [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart-git/supabase/schema.sql) to ensure new address columns exist.
+3. Existing orders remain compatible because legacy `address` is still retained for fallback display.
+
 
 
 
