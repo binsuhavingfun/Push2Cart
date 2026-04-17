@@ -605,6 +605,7 @@ Why:
 - A custom non-copyright arcade-style win jingle plays only when the reward is revealed.
 - Lose states do not trigger reward reveal, confetti, or win jingle.
 - The updated behavior is tuned for both desktop and mobile interactions.
+- Mobile layout was improved so players can see the claw gameplay area and `Drop Claw` controls together without needing to scroll during active play.
 
 ## Troubleshooting
 

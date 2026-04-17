@@ -332,11 +332,11 @@ export function ClawMachine({
             : "Result";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-      <div className="pixel-border pixel-panel p-6">
+    <div className="grid gap-4 lg:gap-6 lg:grid-cols-[1fr_0.9fr]">
+      <div className="pixel-border pixel-panel p-4 sm:p-6">
         <p className="pixel-heading text-xs text-secondary">Push2Cart Arcade</p>
         <h2 className="pixel-heading mt-4 text-lg text-white">Drop Claw Challenge</h2>
-        <div className="relative mt-8 h-[440px] overflow-hidden border-4 border-secondary bg-[linear-gradient(180deg,hsl(240_13%_17%),hsl(235_20%_9%))] shadow-[inset_0_0_0_4px_hsl(320_100%_50%/0.35)]">
+        <div className="relative mt-4 sm:mt-8 h-[52vh] min-h-[290px] max-h-[380px] sm:h-[440px] sm:max-h-none overflow-hidden border-4 border-secondary bg-[linear-gradient(180deg,hsl(240_13%_17%),hsl(235_20%_9%))] shadow-[inset_0_0_0_4px_hsl(320_100%_50%/0.35)]">
           <div className="absolute inset-0 bg-[linear-gradient(120deg,transparent_10%,hsl(0_0%_100%/0.16)_20%,transparent_32%)] animate-[pulse_2.2s_ease-in-out_infinite]" />
           <div className="absolute inset-x-8 top-5 h-3 border border-secondary/50 bg-background/70" />
 
@@ -394,9 +394,35 @@ export function ClawMachine({
             </div>
           ) : null}
         </div>
+
+        <div className="mt-4 space-y-3 lg:hidden">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="border border-white/10 bg-background/50 px-3 py-2 text-xs text-white/80">
+              Plays left: <span className="font-semibold text-accent">{playsLeft}</span>
+            </div>
+            <div className="border border-secondary/40 bg-secondary/10 px-3 py-2 text-xs uppercase tracking-[0.12em] text-secondary">
+              State: {phaseLabel}
+            </div>
+          </div>
+
+          <button
+            onClick={handleDropPress}
+            disabled={playsLeft <= 0 || loading || phase !== "ready"}
+            className="pixel-border w-full px-4 py-3 text-sm disabled:opacity-60"
+          >
+            {loading ? "Running..." : "Drop Claw"}
+          </button>
+
+          <p className="text-sm text-secondary">{message}</p>
+          {revealedReward ? (
+            <div className="border border-accent/40 bg-accent/15 px-4 py-3 text-sm text-white">
+              Reward Revealed: {revealedReward.discountPercent}% off ({revealedReward.code})
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <aside className="pixel-border pixel-border-yellow pixel-panel p-6">
+      <aside className="hidden lg:block pixel-border pixel-border-yellow pixel-panel p-6">
         <p className="pixel-heading text-xs text-white">Claw Controls</p>
         <p className="mt-4 text-white/80">
           Each account gets 2 plays per day. Time your drop to feel like a real arcade claw.
