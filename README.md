@@ -597,11 +597,14 @@ Why:
 ## Claw Machine Behavior Update
 
 - Before dropping, the claw now moves left-right automatically across the machine.
-- Horizontal movement updates smoothly and picks random positions within allowed bounds.
-- After a short pause, the claw drops vertically from its current horizontal position.
-- Existing win/lose reward logic is unchanged.
-- A custom non-copyright arcade-style win jingle plays only when a reward is confirmed.
-- Lose states do not trigger the win jingle.
+- The player controls when to drop by pressing the `Drop Claw` button.
+- On button press, horizontal movement locks, then the claw pauses briefly and drops from its current position.
+- The sequence continues with grab, lift, short suspense pause, and then result reveal while keeping the existing win/lose logic.
+- Reward is revealed only after a successful catch and lift completion to improve suspense and realism.
+- A lightweight confetti effect appears only on confirmed wins.
+- A custom non-copyright arcade-style win jingle plays only when the reward is revealed.
+- Lose states do not trigger reward reveal, confetti, or win jingle.
+- The updated behavior is tuned for both desktop and mobile interactions.
 
 ## Troubleshooting
 

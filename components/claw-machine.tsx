@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 type RewardResult = {
   code: string;
@@ -9,6 +9,14 @@ type RewardResult = {
 };
 
 type Phase = "ready" | "dropping" | "grabbing" | "lifting" | "result";
+type ConfettiPiece = {
+  left: number;
+  delayMs: number;
+  durationMs: number;
+  driftPx: number;
+  rotationDeg: number;
+  color: string;
+};
 
 const capsules = ["Speed", "Lucky", "Bonus", "Prime", "Flash", "Boost"];
 const SWEEP_MIN_X = -120;
@@ -19,8 +27,11 @@ const DROP_DURATION_MS = 700;
 const GRAB_HOLD_MS = 420;
 const LIFT_DURATION_MS = 700;
 const RESULT_SHOW_MS = 1600;
+const REWARD_REVEAL_DELAY_MS = 420;
+const CONFETTI_COUNT = 22;
 const BASE_CABLE_HEIGHT = 46;
 const DROP_DEPTH = 210;
+const CONFETTI_COLORS = ["#ff3d81", "#00e5ff", "#ffd600", "#7c4dff", "#3dff8c", "#ff8f3d"];
 
 export function ClawMachine({
   initialPlaysLeft,
@@ -35,8 +46,9 @@ export function ClawMachine({
   const [loading, setLoading] = useState(false);
   const [clawOffset, setClawOffset] = useState(0);
   const [dropDepth, setDropDepth] = useState(0);
-  const [liftedCapsule, setLiftedCapsule] = useState<string | null>(null);
-  const [didWinLastPlay, setDidWinLastPlay] = useState(false);
+  const [revealedReward, setRevealedReward] = useState<RewardResult | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiPieces, setConfettiPieces] = useState<ConfettiPiece[]>([]);
 
   const frameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
@@ -50,12 +62,15 @@ export function ClawMachine({
     workflowTimeoutsRef.current = [];
   };
 
-  const getCapsuleByOffset = (offset: number) => {
-    const normalized = (offset - SWEEP_MIN_X) / (SWEEP_MAX_X - SWEEP_MIN_X);
-    const clamped = Math.min(1, Math.max(0, normalized));
-    const column = Math.min(2, Math.max(0, Math.round(clamped * 2)));
-    return capsules[3 + column] ?? capsules[column] ?? capsules[0];
-  };
+  const buildConfettiPieces = () =>
+    Array.from({ length: CONFETTI_COUNT }, () => ({
+      left: Math.random() * 100,
+      delayMs: Math.floor(Math.random() * 280),
+      durationMs: 1100 + Math.floor(Math.random() * 850),
+      driftPx: -90 + Math.random() * 180,
+      rotationDeg: -280 + Math.random() * 560,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]
+    }));
 
   const wait = (ms: number) =>
     new Promise<void>((resolve) => {
@@ -222,8 +237,9 @@ export function ClawMachine({
     }
 
     setLoading(true);
-    setDidWinLastPlay(false);
-    setLiftedCapsule(getCapsuleByOffset(offsetRef.current));
+    setRevealedReward(null);
+    setShowConfetti(false);
+    setConfettiPieces([]);
     clearWorkflowTimeouts();
     playSequence("button");
 
@@ -273,20 +289,21 @@ export function ClawMachine({
 
     if (!response.ok) {
       playSequence("lose");
-      setDidWinLastPlay(false);
-      setLiftedCapsule(null);
       setMessage(payload.error ?? "Claw jammed. Try again soon.");
     } else if (payload.didWin && payload.reward) {
       const reward = payload.reward;
+      setMessage("Claw secured something...");
+      await wait(REWARD_REVEAL_DELAY_MS);
+      if (!mountedRef.current) return;
+      setRevealedReward(reward);
+      setConfettiPieces(buildConfettiPieces());
+      setShowConfetti(true);
       playWinJingle();
-      setDidWinLastPlay(true);
       setMessage(
         `${reward.rarity === "rare" ? "Jackpot" : "Win"}: ${reward.discountPercent}% off with code ${reward.code}`
       );
     } else {
       playSequence("lose");
-      setDidWinLastPlay(false);
-      setLiftedCapsule(null);
       setMessage("No reward this round. Try again on your next play.");
     }
 
@@ -297,8 +314,9 @@ export function ClawMachine({
 
     setPhase("ready");
     setMessage("Time your shot and drop the claw.");
-    setDidWinLastPlay(false);
-    setLiftedCapsule(null);
+    setRevealedReward(null);
+    setShowConfetti(false);
+    setConfettiPieces([]);
     setLoading(false);
   };
 
@@ -337,15 +355,6 @@ export function ClawMachine({
                 <span className="absolute bottom-0 left-2 h-6 w-[2px] rotate-[24deg] bg-white shadow-[0_0_8px_hsl(0_0%_100%/0.7)]" />
                 <span className="absolute bottom-0 right-2 h-6 w-[2px] -rotate-[24deg] bg-white shadow-[0_0_8px_hsl(0_0%_100%/0.7)]" />
               </div>
-              {liftedCapsule && phase !== "ready" ? (
-                <div
-                  className={`mt-1 rounded-full border-2 border-accent px-3 py-1 text-[9px] uppercase tracking-[0.12em] text-white ${
-                    didWinLastPlay ? "bg-accent/35 shadow-[0_0_14px_hsl(45_100%_60%/0.7)]" : "bg-primary/25"
-                  }`}
-                >
-                  {liftedCapsule}
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -355,7 +364,7 @@ export function ClawMachine({
                 key={capsule}
                 className={`relative flex h-20 items-center justify-center rounded-full border-2 border-accent text-center text-[10px] uppercase tracking-[0.18em] text-white shadow-[0_10px_18px_hsl(240_40%_4%/0.7)] ${
                   index % 2 === 0 ? "bg-accent/20" : "bg-primary/25"
-                } ${liftedCapsule === capsule && phase !== "ready" ? "opacity-40" : ""}`}
+                }`}
               >
                 <span className="absolute left-3 top-3 h-3 w-3 rounded-full bg-white/70" />
                 {capsule}
@@ -363,6 +372,27 @@ export function ClawMachine({
             ))}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-8 bg-black/30" />
+          {showConfetti ? (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {confettiPieces.map((piece, index) => (
+                <span
+                  // eslint-disable-next-line react/no-array-index-key
+                  key={index}
+                  className="absolute top-0 block h-2 w-2 rounded-sm confetti-piece"
+                  style={
+                    {
+                      left: `${piece.left}%`,
+                      backgroundColor: piece.color,
+                      "--confetti-duration": `${piece.durationMs}ms`,
+                      "--confetti-delay": `${piece.delayMs}ms`,
+                      "--confetti-drift": `${piece.driftPx}px`,
+                      "--confetti-rotate": `${piece.rotationDeg}deg`
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -389,8 +419,32 @@ export function ClawMachine({
         </button>
 
         <p className="mt-6 text-sm text-secondary">{message}</p>
+        {revealedReward ? (
+          <div className="mt-4 border border-accent/40 bg-accent/15 px-4 py-3 text-sm text-white">
+            Reward Revealed: {revealedReward.discountPercent}% off ({revealedReward.code})
+          </div>
+        ) : null}
         <p className="mt-3 text-xs text-white/60">Sound effects are generated in-browser with Web Audio.</p>
       </aside>
+      <style jsx>{`
+        .confetti-piece {
+          animation: confetti-fall var(--confetti-duration) ease-out var(--confetti-delay) forwards;
+        }
+
+        @keyframes confetti-fall {
+          0% {
+            transform: translate3d(0, -12px, 0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate3d(var(--confetti-drift), 390px, 0) rotate(var(--confetti-rotate));
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
