@@ -6,6 +6,8 @@ type RewardResult = {
   code: string;
   discountPercent: number;
   rarity: "common" | "rare";
+  capsuleName?: string;
+  rewardLabel?: string;
 };
 
 type Phase = "ready" | "dropping" | "grabbing" | "lifting" | "result";
@@ -18,7 +20,7 @@ type ConfettiPiece = {
   color: string;
 };
 
-const capsules = ["Speed", "Lucky", "Bonus", "Prime", "Flash", "Boost"];
+const capsules = ["Yizz", "Nux", "Lucky", "GG", "67", "Sheesh"];
 const SWEEP_MIN_X = -120;
 const SWEEP_MAX_X = 120;
 const SWEEP_SPEED_PX_PER_SEC = 120;
@@ -73,7 +75,14 @@ export function ClawMachine({
     }));
 
   const getRewardLabel = (reward: RewardResult) =>
-    `${reward.discountPercent}% Off Voucher`;
+    reward.rewardLabel ?? `${reward.discountPercent}% Off Voucher`;
+
+  const getCapsuleByOffset = (offset: number) => {
+    const normalized = (offset - SWEEP_MIN_X) / (SWEEP_MAX_X - SWEEP_MIN_X);
+    const clamped = Math.min(0.9999, Math.max(0, normalized));
+    const index = Math.floor(clamped * capsules.length);
+    return capsules[index] ?? capsules[0];
+  };
 
   const wait = (ms: number) =>
     new Promise<void>((resolve) => {
@@ -246,12 +255,14 @@ export function ClawMachine({
     clearWorkflowTimeouts();
     playSequence("button");
 
+    const targetCapsule = getCapsuleByOffset(offsetRef.current);
+
     const responsePromise = fetch("/api/game/play", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ userId })
+      body: JSON.stringify({ userId, targetCapsule })
     });
 
     setPhase("dropping");
@@ -382,6 +393,9 @@ export function ClawMachine({
                 <p className="mt-1 text-[11px] text-white/90">
                   You got: {getRewardLabel(revealedReward)}
                 </p>
+                {revealedReward.capsuleName ? (
+                  <p className="mt-1 text-[10px] text-white/70">Capsule: {revealedReward.capsuleName}</p>
+                ) : null}
                 <p className="mt-1 text-[10px] text-white/70">Voucher Code: {revealedReward.code}</p>
                 <p className="mt-1 text-[10px] lowercase tracking-[0.1em] text-secondary">yay</p>
               </div>

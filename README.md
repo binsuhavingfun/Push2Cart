@@ -97,6 +97,26 @@ npm run dev
 - Voucher rewards are stored in `vouchers`, daily play counts are tracked in `game_plays`, and selected vouchers are marked as used on checkout.
 - Product reviews are stored in `reviews` and linked to each product detail page.
 
+## Claw Capsule Meaning
+
+The six items shown at the bottom of the claw machine are capsule types:
+- `Yizz`
+- `Nux`
+- `Lucky`
+- `GG`
+- `67`
+- `Sheesh`
+
+What they mean in gameplay:
+- The claw's horizontal position at drop time maps to one of these capsules.
+- That capsule is sent to the server as `targetCapsule`.
+- Each capsule has its own reward profile (`winChance`, `rareChance`, and discount ranges).
+- The final voucher label shows this source, for example: `12% Off Lucky Voucher`.
+
+Important note:
+- This does not guarantee a specific reward every time.
+- It controls the probability profile used for that round, so timing still matters.
+
 ## Mobile Navbar QA Checklist
 
 Use this checklist before shipping navbar updates:

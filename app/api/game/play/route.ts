@@ -3,23 +3,100 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RewardPayload = {
   userId: string;
+  targetCapsule?: string;
 };
 
-function generateReward() {
-  const isWin = Math.random() < 0.72;
+const CAPSULE_PROFILES = {
+  Yizz: {
+    winChance: 0.75,
+    rareChance: 0.2,
+    commonMin: 5,
+    commonMax: 9,
+    rareMin: 18,
+    rareMax: 28
+  },
+  Nux: {
+    winChance: 0.78,
+    rareChance: 0.28,
+    commonMin: 6,
+    commonMax: 10,
+    rareMin: 20,
+    rareMax: 35
+  },
+  Lucky: {
+    winChance: 0.72,
+    rareChance: 0.22,
+    commonMin: 5,
+    commonMax: 11,
+    rareMin: 20,
+    rareMax: 30
+  },
+  GG: {
+    winChance: 0.68,
+    rareChance: 0.3,
+    commonMin: 7,
+    commonMax: 12,
+    rareMin: 22,
+    rareMax: 40
+  },
+  "67": {
+    winChance: 0.7,
+    rareChance: 0.18,
+    commonMin: 5,
+    commonMax: 10,
+    rareMin: 18,
+    rareMax: 26
+  },
+  Sheesh: {
+    winChance: 0.66,
+    rareChance: 0.25,
+    commonMin: 8,
+    commonMax: 12,
+    rareMin: 24,
+    rareMax: 42
+  }
+} as const;
+
+type CapsuleName = keyof typeof CAPSULE_PROFILES;
+
+const CAPSULE_NAMES = Object.keys(CAPSULE_PROFILES) as CapsuleName[];
+
+function randomBetween(min: number, max: number) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+function normalizeCapsule(value?: string): CapsuleName {
+  if (!value) {
+    return "Nux";
+  }
+
+  const found = CAPSULE_NAMES.find(
+    (capsule) => capsule.toLowerCase() === value.trim().toLowerCase()
+  );
+
+  return found ?? "Nux";
+}
+
+function generateReward(targetCapsule?: string) {
+  const capsuleName = normalizeCapsule(targetCapsule);
+  const profile = CAPSULE_PROFILES[capsuleName];
+
+  const isWin = Math.random() < profile.winChance;
   if (!isWin) {
     return null;
   }
 
-  const rare = Math.random() < 0.22;
+  const rare = Math.random() < profile.rareChance;
   const discountPercent = rare
-    ? 20 + Math.floor(Math.random() * 31)
-    : 5 + Math.floor(Math.random() * 6);
+    ? randomBetween(profile.rareMin, profile.rareMax)
+    : randomBetween(profile.commonMin, profile.commonMax);
 
   return {
     code: `P2C-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
     discountPercent,
-    rarity: rare ? "rare" : "common"
+    rarity: rare ? "rare" : "common",
+    capsuleName,
+    rewardLabel: `${discountPercent}% Off ${capsuleName} Voucher`
   };
 }
 
@@ -78,7 +155,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: playError.message }, { status: 500 });
   }
 
-  const reward = generateReward();
+  const reward = generateReward(payload.targetCapsule);
 
   if (reward) {
     const { error: voucherError } = await supabase.from("vouchers").insert({
