@@ -23,6 +23,10 @@ type OrderPayload = {
   voucherId?: string | null;
 };
 
+const MAX_UNIQUE_ITEMS = 20;
+const MAX_QUANTITY_PER_ITEM = 10;
+const MAX_TOTAL_UNITS = 50;
+
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
 
@@ -89,6 +93,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Your cart contains invalid item data." }, { status: 400 });
   }
 
+  if (normalizedItems.length > MAX_UNIQUE_ITEMS) {
+    return NextResponse.json(
+      { error: "Orders are limited to 20 unique products per checkout." },
+      { status: 400 }
+    );
+  }
+
+  if (normalizedItems.some((item) => item.quantity > MAX_QUANTITY_PER_ITEM)) {
+    return NextResponse.json(
+      { error: "A single product cannot exceed 10 units in one checkout." },
+      { status: 400 }
+    );
+  }
+
+  const totalUnits = normalizedItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (totalUnits > MAX_TOTAL_UNITS) {
+    return NextResponse.json(
+      { error: "Orders are limited to 50 total units per checkout." },
+      { status: 400 }
+    );
+  }
+
   if (payload.voucherId && !isUuid(payload.voucherId)) {
     return NextResponse.json({ error: "Invalid voucher reference." }, { status: 400 });
   }
@@ -98,6 +125,55 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: firstError ?? "Please enter a valid shipping address.", validationErrors: addressErrors },
       { status: 400 }
+    );
+  }
+
+  const builtAddress = buildAddressLine(normalizedAddress);
+  const { data: cartRows, error: cartError } = await supabase
+    .from("cart_items")
+    .select("product_id, quantity")
+    .eq("user_id", user.id);
+
+  if (cartError) {
+    return NextResponse.json({ error: cartError.message }, { status: 500 });
+  }
+
+  const serverCartItems = Array.from(
+    (((cartRows as Array<{ product_id: string; quantity: number }> | null) ?? [])).reduce(
+      (accumulator, item) => {
+        accumulator.set(item.product_id, (accumulator.get(item.product_id) ?? 0) + Number(item.quantity));
+        return accumulator;
+      },
+      new Map<string, number>()
+    )
+  )
+    .map(([product_id, quantity]) => ({ product_id, quantity }))
+    .sort((a, b) => a.product_id.localeCompare(b.product_id));
+
+  const requestItems = [...normalizedItems].sort((a, b) => a.product_id.localeCompare(b.product_id));
+
+  if (JSON.stringify(serverCartItems) !== JSON.stringify(requestItems)) {
+    return NextResponse.json(
+      { error: "Your cart changed before checkout. Please refresh and try again." },
+      { status: 409 }
+    );
+  }
+
+  const duplicateWindowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { data: recentOrder } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("address", builtAddress)
+    .gte("created_at", duplicateWindowStart)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (recentOrder) {
+    return NextResponse.json(
+      { error: "A similar order was placed recently. Please wait a moment before trying again." },
+      { status: 409 }
     );
   }
 
@@ -113,7 +189,7 @@ export async function POST(request: Request) {
     p_province: normalizedAddress.province,
     p_postal_code: normalizedAddress.postalCode,
     p_delivery_notes: normalizedAddress.deliveryNotes,
-    p_address: buildAddressLine(normalizedAddress),
+    p_address: builtAddress,
     p_payment_method: "Cash on Delivery",
     p_voucher_id: payload.voucherId ?? null,
     p_items: normalizedItems

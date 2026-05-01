@@ -683,6 +683,7 @@ Why:
 - The admin orders table now includes lightweight search and basic order statistics for cleaner day-to-day operations.
 - Admins can now open a dedicated order details view with customer, delivery, payment, and line-item information.
 - Order updates now leave a status activity trail, and the write APIs use tighter server-side input normalization and checks.
+- Checkout now verifies that the posted cart matches the authenticated server-side cart, limits oversized orders, and blocks immediate duplicate submissions from the same account/address.
 
 ### Deployment note
 
