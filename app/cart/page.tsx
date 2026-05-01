@@ -1,7 +1,13 @@
+import { redirect } from "next/navigation";
 import { CartView } from "@/components/cart-view";
 import { SectionHeading } from "@/components/section-heading";
+import { getServerAdminState } from "@/lib/admin";
 
-export default function CartPage() {
+export default async function CartPage() {
+  if (await getServerAdminState()) {
+    redirect("/admin");
+  }
+
   return (
     <div className="space-y-8">
       <SectionHeading

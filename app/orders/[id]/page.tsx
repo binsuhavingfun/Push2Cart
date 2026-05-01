@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { OrderStatusTimeline } from "@/components/order-status-timeline";
+import { requireCustomerUser } from "@/lib/admin";
 import { formatCurrency } from "@/lib/format";
-import { requireUser } from "@/lib/auth";
 import type { Order, Product } from "@/lib/types";
 import { getDeliveryEstimate } from "@/lib/shipping";
 
@@ -18,7 +18,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, user } = await requireUser(`/orders/${id}`);
+  const { supabase, user } = await requireCustomerUser(`/orders/${id}`);
 
   const { data: order } = await supabase
     .from("orders")

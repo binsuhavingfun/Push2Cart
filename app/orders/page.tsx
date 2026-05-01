@@ -1,10 +1,10 @@
 import { OrderList } from "@/components/order-list";
 import { SectionHeading } from "@/components/section-heading";
-import { requireUser } from "@/lib/auth";
+import { requireCustomerUser } from "@/lib/admin";
 import type { Order } from "@/lib/types";
 
 export default async function OrdersPage() {
-  const { supabase, user } = await requireUser("/orders");
+  const { supabase, user } = await requireCustomerUser("/orders");
   const { data } = await supabase
     .from("orders")
     .select("*")

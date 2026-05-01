@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/admin";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -13,6 +14,10 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    return NextResponse.json({ vouchers: [] });
+  }
+
+  if (await isAdminUser(supabase, user.id)) {
     return NextResponse.json({ vouchers: [] });
   }
 

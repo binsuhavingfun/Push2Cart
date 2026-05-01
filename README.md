@@ -8,34 +8,57 @@ Subtext: `Your cart just got more fun.`
 
 ## Platform Overview
 
-Push2Cart offers a simple shopping experience with fun reward moments along the way. The pixel-style design stays focused on useful interactions so everything remains clear and easy to use—paano naman sa mobile? Smooth din. Built in the Philippines, Push2Cart keeps things playful without being over naman sa ask for everyday use.
+Push2Cart is a gamified shopping website with a retro arcade style. Users can browse products, play the claw machine, earn vouchers, and track their orders in one place.
 
 ## Homepage Featured Description
 
-A selection of gear you can easily check out and add to your setup. Everything stays simple and fun to explore without being over naman sa ask.
+Browse a few featured picks, grab what you like, and keep shopping simple.
 
 ## Features
 
 - Homepage hero with pixel-art branding and dual CTAs
-- Responsive desktop/mobile navbar with hamburger toggle on small screens
+- Responsive single-row desktop navbar with visible `Play. Shop. Save.` tagline and a hamburger menu on small screens
 - Responsive product grid and dedicated product detail pages
 - Guest cart via `localStorage` with automatic merge into logged-in Supabase cart
 - Supabase email/password authentication
 - Protected checkout with Cash on Delivery order creation and voucher redemption
+- Customer profile page with account details, order history, purchase history, vouchers, settings, and in-page logout
 - Order history and order tracking timeline
-- Daily claw machine mini-game with animated claw states and generated sound effects
+- Daily claw machine mini-game with automatic left-right claw movement, timed drop play, and generated sound effects
 - Product review system with 1-5 star ratings and comments
-- Admin order operations page for status updates
+- Admin dashboard, admin orders view, and admin reports management pages
+- Footer with helpful links plus creator contact details
+- About and Report pages with built-in pixel illustrations
 - Supabase-ready RLS policies for products, carts, orders, vouchers, and game plays
 
-## New Features Added
+## Implemented UI and Routes
 
-- `Mobile Navbar Responsiveness Fix` with collapsible hamburger menu and auto-close behavior on navigation
-- `My Reviews` account page: [http://localhost:3000/account](http://localhost:3000/account)
-- `Admin Orders` operations page: [http://localhost:3000/admin/orders](http://localhost:3000/admin/orders)
-- `Product Reviews` on each product detail page (logged-in users can post 1-5 star reviews)
-- `Voucher Redemption` at checkout (one voucher per order, marked used after placement)
-- `Claw Machine Upgrade` with layered visuals, smooth motion states, and generated sound effects
+- Navbar:
+  - Guest: `Home`, `Products`, `Mini Game`, `About`, `Report`, `Login`
+  - Customer: `Home`, `Products`, `Mini Game`, `About`, `Report`, `Cart`, `Profile`
+  - Admin: `Dashboard`, `Orders`, `Reports`, `Logout`
+- Footer:
+  - Push2Cart branding
+  - `Play. Shop. Save.` tagline
+  - Helpful links: `About`, `Products`, `Mini Game`, `Report`
+  - Creator contact details: email, GitHub, support hours
+- Customer profile route: `/account`
+  - `My Account`
+  - `My Orders`
+  - `Purchase History`
+  - `Vouchers`
+  - `Settings`
+  - `Logout`
+- Customer order routes:
+  - `/orders`
+  - `/orders/[id]`
+- Admin routes:
+  - `/admin`
+  - `/admin/orders`
+  - `/admin/orders/[id]`
+  - `/admin/reports`
+- Support route:
+  - `/report`
 
 ## Project Structure
 
@@ -96,6 +119,15 @@ npm run dev
 - The claw machine uses CSS animations and generated Web Audio sounds, not external audio assets.
 - Voucher rewards are stored in `vouchers`, daily play counts are tracked in `game_plays`, and selected vouchers are marked as used on checkout.
 - Product reviews are stored in `reviews` and linked to each product detail page.
+- Footer now shows Push2Cart branding, helpful links, creator contact details, GitHub (`https://github.com/binsuhavingfun`), and support hours.
+
+## Role Separation
+
+- Guests can browse products and use the guest cart.
+- Customers can shop, check out, view order tracking, manage vouchers, and use the customer profile page.
+- Admins are redirected away from customer-only routes like checkout, customer orders, vouchers, and the mini game.
+- Admin accounts get a management-focused experience through `/admin`, `/admin/orders`, and `/admin/reports`.
+- Admin accounts cannot place customer orders, submit product reviews, use customer vouchers, or play the reward mini game.
 
 ## Claw Capsule Meaning
 
@@ -134,177 +166,94 @@ npm run dev
    - Menu closes after selecting a link.
    - Content remains readable and is not blocked by nav when closed.
    - No horizontal overflow.
-4. Confirm desktop view (`>=1024px`) still shows the normal full navigation.
+4. Confirm desktop view (`>=1024px`) keeps the logo, visible `Play. Shop. Save.` tagline, main navigation, and account actions on one balanced row.
 
 ## Navbar Code Walkthrough (Desktop + Mobile)
 
-This section explains `components/navbar.tsx` block by block and why each part exists.
+This section explains the current `components/navbar.tsx` structure at a higher level.
 
-1. `use client`
-- Why: the navbar uses React state, effects, and click handlers, so it must run on the client.
+1. Brand and motto
+- The `Push2Cart` logo and `Play. Shop. Save.` tagline stay visible together on the website.
+- On admin routes the logo text switches to `Push2Cart Admin`.
 
-2. Imports (`useEffect`, `useState`, `Link`, `usePathname`, `useRouter`, hooks, Supabase client)
-- Why: each import supports one navbar responsibility.
-- `usePathname`: detects current route for active link styles.
-- `useRouter`: allows redirect/refresh after logout.
-- `useAuth`: reads signed-in user.
-- `useCart`: shows live cart item count.
-- Supabase browser client: checks admin role and signs out safely.
+2. Single-row desktop layout
+- On desktop, the logo, main navigation, and auth/account actions share one balanced row.
+- Guest users see the main store links and `Login`.
+- Signed-in shoppers see the store links plus `Cart` and `Profile`.
+- Signed-in admins see dashboard-focused navigation and `Logout`.
 
-3. `links` array
-- Why: keeps primary nav links in one reusable source (`Home`, `Products`, `Mini Game`, `About`, `Contact`).
-- Benefit: adding/removing links only requires editing one array.
+3. Mobile behavior
+- On smaller screens the navbar collapses into the brand area plus a hamburger toggle.
+- Opening the menu reveals the same route set in a vertical stack.
+- The menu closes automatically on navigation so it does not block page content.
 
-4. Component state
-- `isAdmin`: controls whether admin link is shown.
-- `isMobileMenuOpen`: controls mobile menu open/close state.
-- Why: desktop and mobile need different visibility logic, but should share one nav source.
+4. Shared route logic
+- Primary shopper links live in one shared array and admin links live in a separate array.
+- This keeps the navbar easier to maintain when link labels change.
 
-5. Admin check effect
-- Queries `admin_users` with current `user.id`.
-- Why: prevents showing admin link to non-admin users.
-- Fallback behavior: if query fails, navbar defaults to non-admin (safer UI state).
+5. Auth and role handling
+- The navbar reads the current session from the auth hook.
+- It checks `admin_users` in Supabase to decide whether to render shopper or admin navigation.
+- Customer logout lives inside the profile page.
+- Admin logout stays available directly from the admin navbar.
 
-6. Route-change effect (`setIsMobileMenuOpen(false)` on `pathname` change)
-- Why: menu should auto-close after navigation so it does not stay open and block content on small screens.
-
-7. Logout handler
-- Calls Supabase `signOut()`, closes mobile menu, redirects to home, refreshes router.
-- Why: ensures auth state and visible navbar links update immediately.
-
-8. Reusable class constants (`baseLinkClasses`, `cartClasses`, `authLinkClasses`)
-- Why: keeps styling consistent across desktop and mobile menus.
-- Benefit: single edit point for shared visual rules in your pixel theme.
-
-9. Header wrapper
-- `fixed inset-x-0 top-0 z-40 ... backdrop-blur-md`
-- Why: keeps navbar always visible while scrolling and layered above page content.
-- Important: this works with top spacing in `app/layout.tsx` (`pt-28`) so content is not hidden under the fixed header.
-
-10. Top row brand + mobile toggle
-- Left: brand title/subtext.
-- Right: hamburger button only on mobile (`lg:hidden`).
-- Why: on small screens, full horizontal nav is replaced with a compact toggle to save vertical space.
-
-11. Hamburger icon animation
-- Three bars transform into an `X` when opened.
-- Why: gives clear visual state (open vs closed) and improves usability.
-
-12. Desktop navigation block
-- `hidden ... lg:flex`
-- Why: unchanged desktop behavior; full menu remains visible on large screens.
-- Includes links, cart count, account/orders/admin/logout or login button.
-
-13. Mobile navigation block
-- `lg:hidden`, collapsible with `max-h` transition and `overflow-hidden`.
-- Why: smooth open/close behavior without covering the whole page permanently.
-- `max-h-[70vh]` + internal `overflow-y-auto`:
-  - prevents viewport takeover on short screens
-  - still allows scrolling inside menu if links/actions grow
-
-14. Link click behavior (`onClick={closeMobileMenu}`)
-- Why: after tapping any link on mobile, the menu closes immediately for better content visibility.
-
-15. Accessibility attributes
-- `aria-label`, `aria-expanded`, `aria-controls`, plus `sr-only` label.
-- Why: screen readers can understand menu button state and relationship to the menu panel.
-
-16. Desktop behavior summary
-- Full nav always visible at `lg` and above.
-- Active link styling uses current route.
-- Auth/admin/cart actions remain directly accessible.
-
-17. Mobile behavior summary
-- Compact header shows brand + hamburger.
-- Menu opens/closes predictably.
+6. Styling and responsiveness
+- The navbar keeps the pixel/retro arcade styling, balanced spacing, and active-link highlighting.
+- Desktop uses inline navigation; mobile uses a collapsible panel with accessible button labels.
 - Menu auto-closes on route change and link taps.
 - Content stays readable when menu is closed.
 
 
-## Complete Code Walkthrough
+## Visual Page Notes
 
-This section explains the role of each major code area and why it is implemented that way.
+- About page:
+  - Uses friendlier product copy for the main description
+  - Keeps the technical stack in a smaller `Built With` section
+  - Includes a frontend-built pixel laptop illustration with code on screen
+- Report page:
+  - Uses a two-column layout with the report form on one side
+  - Includes a frontend-built shopping cart carrying feedback/message cards
+- Mini game page:
+  - The claw starts sweeping left and right automatically
+  - Players time the button press to drop the claw
+  - The claw stays visually attached to the rail/cable assembly
+  - The sweep restarts cleanly after the result flow
 
-1. App Router pages (`app/*`)
-- `app/layout.tsx`: global shell wrapper for providers, background effects, fixed navbar, and main content spacing.
-- `app/globals.css`: global Tailwind and theme-level styles shared across all routes.
-- `app/page.tsx`: homepage entry with hero and featured sections.
-- `app/about/page.tsx`, `app/contact/page.tsx`: static marketing/info pages.
-- `app/products/page.tsx`: product listing page that feeds from Supabase or fallback data.
-- `app/products/[id]/page.tsx`: product detail page per item id with add-to-cart and reviews.
-- `app/cart/page.tsx`: cart page container for cart UI actions.
-- `app/checkout/page.tsx`: checkout page with voucher and order placement flow.
-- `app/auth/page.tsx`: authentication page for sign in/sign up flows.
-- `app/orders/page.tsx`, `app/orders/[id]/page.tsx`: customer order list and individual order status tracking.
-- `app/account/page.tsx`: account overview and user-related actions.
-- `app/admin/orders/page.tsx`: admin order management UI.
-- `app/game/page.tsx`: claw machine game page.
-- `app/not-found.tsx`: custom 404 route fallback.
-- `app/supabase-example/page.tsx`: sandbox/example page for Supabase usage.
+## Changed Components and Pages
 
-2. API routes (`app/api/*`)
-- `app/api/orders/route.ts`: create/read order requests.
-- `app/api/reviews/route.ts`: review submission and retrieval endpoints.
-- `app/api/vouchers/route.ts`: voucher issuance/redeem checks.
-- `app/api/game/play/route.ts`: game play result handling and reward logic.
-- `app/api/admin/orders/[id]/route.ts`: admin-only order status updates.
-- `app/api/reports/route.ts`: bug/feedback report submission, email notification, and optional DB insert.
-- Why these exist: keeps sensitive operations server-side and centralizes business logic.
-
-3. Reusable UI components (`components/*`)
-- `navbar.tsx`: fixed responsive navigation for desktop and mobile, auth-aware links, and cart count.
-- `hero-section.tsx`, `section-heading.tsx`: reusable homepage/section framing in pixel style.
-- `product-grid.tsx`, `product-card.tsx`, `add-to-cart-button.tsx`: storefront browsing and add-to-cart flow.
-- `product-reviews.tsx`: review list and submission UI.
-- `cart-view.tsx`: line items, quantity controls, totals, and cart actions.
-- `checkout-form.tsx`: checkout details and voucher application UI.
-- `order-list.tsx`, `order-status-timeline.tsx`: order history and progress display.
-- `auth-forms.tsx`: login/register UI.
-- `claw-machine.tsx`: mini-game visuals, state transitions, and user actions.
-- `admin-orders-table.tsx`: admin order controls and status update interface.
-- `providers.tsx`: app-wide context composition (auth/cart/toast).
-- Why this structure: keeps page files thin and reuses UI logic consistently.
-
-4. State and hooks (`hooks/*`)
-- `use-auth.tsx`: current user/session state and auth change tracking.
-- `use-cart.tsx`: cart state, storage sync, and cart mutation helpers.
-- `use-toast.tsx`: transient UI notifications.
-- Why hooks exist: shared cross-page state and behavior without duplicating logic.
-
-5. Business logic and data helpers (`lib/*`)
-- `products.ts`, `mock-data.ts`: product retrieval and fallback data source.
-- `types.ts`: shared TypeScript contracts used across pages/components/api.
-- `format.ts`: currency/date/text format helpers.
-- `auth.ts`, `admin.ts`: auth/admin guard and helper logic.
-- `utils.ts`: generic utility helpers (class merging, small helpers).
-- `shipping.ts`: checkout validation, Metro Manila/provincial detection, and address normalization helpers.
-- `supabaseClient.ts` and `lib/supabase/{client,server,middleware}.ts`: Supabase clients for browser, server, and middleware contexts.
-- Why this layer exists: isolates business/data logic from presentation components.
-
-6. Data model and SQL (`supabase/*`)
-- SQL schema, seed, and policy setup for products, carts, orders, reviews, reports, vouchers, and gameplay tables.
-- Why this exists: reproducible backend setup and clear data contract for the app.
-
-7. Navigation behavior architecture (desktop + mobile)
-- Desktop (`lg` and above): full inline nav remains visible for quick access.
-- Mobile (`<lg`): hamburger-driven collapsible menu prevents content obstruction.
-- Route-change auto-close: ensures menu never stays open after navigation.
-- Why: optimized usability per screen size while preserving one consistent nav system.
-
-8. Auth and role-based UI behavior
-- Signed-out users see login action.
-- Signed-in users see account/orders/logout actions.
-- Admin users additionally see admin navigation/action links.
-- Why: keeps UI aligned to permissions and avoids exposing admin controls broadly.
-
-9. Styling system and design consistency
-- Tailwind utility classes drive responsive layout and spacing.
-- Pixel theme classes preserve visual identity across components.
-- Why: fast iteration with consistent brand styling and fewer custom CSS overrides.
-
-10. End-to-end user flow summary
-- Discover products -> add to cart -> authenticate -> checkout with voucher -> track orders -> optionally play game for rewards -> report bugs/feedback when needed.
-- Why this matters: each module is designed to support one connected commerce + game experience.
+- Navigation and shell:
+  - `components/navbar.tsx`
+  - `components/footer.tsx`
+  - `app/layout.tsx`
+- Customer account flow:
+  - `app/account/page.tsx`
+  - `components/profile-logout-button.tsx`
+  - `app/orders/page.tsx`
+  - `app/orders/[id]/page.tsx`
+- Admin management flow:
+  - `app/admin/page.tsx`
+  - `app/admin/orders/page.tsx`
+  - `app/admin/orders/[id]/page.tsx`
+  - `app/admin/reports/page.tsx`
+- Marketing/support pages:
+  - `app/about/page.tsx`
+  - `app/report/page.tsx`
+  - `app/contact/page.tsx`
+- Shopping and role-aware product UI:
+  - `app/cart/page.tsx`
+  - `app/checkout/page.tsx`
+  - `app/products/[id]/page.tsx`
+  - `components/add-to-cart-button.tsx`
+  - `components/product-reviews.tsx`
+- Mini game:
+  - `components/claw-machine.tsx`
+- Role checks and API protections:
+  - `lib/admin.ts`
+  - `hooks/use-admin-status.tsx`
+  - `app/api/orders/route.ts`
+  - `app/api/reviews/route.ts`
+  - `app/api/game/play/route.ts`
+  - `app/api/vouchers/route.ts`
 
 ## GitHub and Vercel Deploy Checklist
 
@@ -545,7 +494,7 @@ Files:
 
 What was added:
 - Navbar link: `Report` -> `/report`
-- Contact page CTA: `Open Report Form`
+- Footer keeps creator contact information while the navbar keeps the user-facing `Report` action easy to find
 
 Why:
 - Makes report feature easy to find for users.
@@ -657,6 +606,7 @@ Why:
 ### Current order management
 
 - Orders are stored in Supabase tables: `orders` for the main record and `order_items` for line items in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+- Operational monitoring tables now also include `order_status_events` for lifecycle history and `security_events` for blocked or suspicious actions.
 - Checkout is handled by [components/checkout-form.tsx](C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx), which posts to [app/api/orders/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts).
 - After checkout, the API validates shipping data, rate-limits the request, then calls the `create_order_with_items` Postgres function to create the order, insert `order_items`, deduct stock, mark a selected voucher as used, clear the user cart, and redirect the user to [app/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx).
 - Order records currently include full name, phone, structured delivery address, ordered products, quantity, total price, order status, payment method, payment status, and order timestamp.
@@ -685,6 +635,7 @@ Why:
 - Order updates now leave a status activity trail, and the write APIs use tighter server-side input normalization and checks.
 - Checkout now verifies that the posted cart matches the authenticated server-side cart, limits oversized orders, and blocks immediate duplicate submissions from the same account/address.
 - The order lifecycle now follows a more practical operations flow with forward-only transitions and cancellation before shipment.
+- Blocked checkout abuse attempts and invalid admin status transitions are now written to `security_events` for admin-side review.
 
 ### Deployment note
 

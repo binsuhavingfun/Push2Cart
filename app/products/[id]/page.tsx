@@ -4,6 +4,7 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 import { ProductCard } from "@/components/product-card";
 import { ProductReviews } from "@/components/product-reviews";
 import { SectionHeading } from "@/components/section-heading";
+import { getServerAdminState } from "@/lib/admin";
 import { formatCurrency } from "@/lib/format";
 import { getProducts } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -17,6 +18,7 @@ export default async function ProductDetailPage({
   const { id } = await params;
   const products = await getProducts();
   const product = products.find((item) => item.id === id);
+  const isAdmin = await getServerAdminState();
 
   if (!product) {
     notFound();
@@ -57,10 +59,16 @@ export default async function ProductDetailPage({
           <div className="mt-6 inline-flex border border-white/10 bg-background/50 px-4 py-3 text-sm text-white/75">
             Stock available: {product.stock}
           </div>
-          <AddToCartButton
-            product={product}
-            className="pixel-border mt-6 px-5 py-4 text-xs pixel-button"
-          />
+          {isAdmin ? (
+            <div className="pixel-border pixel-panel mt-6 p-4 text-sm text-white/75">
+              Admin view only. Shopping actions and customer reviews are disabled for admin accounts.
+            </div>
+          ) : (
+            <AddToCartButton
+              product={product}
+              className="pixel-border mt-6 px-5 py-4 text-xs pixel-button"
+            />
+          )}
         </div>
       </section>
       <section className="space-y-6">

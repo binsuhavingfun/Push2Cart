@@ -1,9 +1,9 @@
 import { CheckoutForm } from "@/components/checkout-form";
 import { SectionHeading } from "@/components/section-heading";
-import { requireUser } from "@/lib/auth";
+import { requireCustomerUser } from "@/lib/admin";
 
 export default async function CheckoutPage() {
-  await requireUser("/checkout");
+  await requireCustomerUser("/checkout");
 
   return (
     <div className="space-y-8">

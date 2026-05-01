@@ -34,6 +34,7 @@ const CONFETTI_COUNT = 22;
 const BASE_CABLE_HEIGHT = 46;
 const DROP_DEPTH = 210;
 const CONFETTI_COLORS = ["#ff3d81", "#00e5ff", "#ffd600", "#7c4dff", "#3dff8c", "#ff8f3d"];
+const INITIAL_SWEEP_OFFSET = SWEEP_MIN_X + 18;
 
 export function ClawMachine({
   initialPlaysLeft,
@@ -46,7 +47,7 @@ export function ClawMachine({
   const [message, setMessage] = useState("Time your shot and drop the claw.");
   const [playsLeft, setPlaysLeft] = useState(initialPlaysLeft);
   const [loading, setLoading] = useState(false);
-  const [clawOffset, setClawOffset] = useState(0);
+  const [clawOffset, setClawOffset] = useState(INITIAL_SWEEP_OFFSET);
   const [dropDepth, setDropDepth] = useState(0);
   const [revealedReward, setRevealedReward] = useState<RewardResult | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -55,7 +56,7 @@ export function ClawMachine({
   const frameRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
   const directionRef = useRef<1 | -1>(1);
-  const offsetRef = useRef(0);
+  const offsetRef = useRef(INITIAL_SWEEP_OFFSET);
   const workflowTimeoutsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const mountedRef = useRef(true);
 
@@ -89,6 +90,13 @@ export function ClawMachine({
       const timeoutId = setTimeout(resolve, ms);
       workflowTimeoutsRef.current.push(timeoutId);
     });
+
+  const resetClawVisualState = () => {
+    setDropDepth(0);
+    setRevealedReward(null);
+    setShowConfetti(false);
+    setConfettiPieces([]);
+  };
 
   const stopSweep = () => {
     if (frameRef.current) {
@@ -151,6 +159,14 @@ export function ClawMachine({
       }
     };
   }, [phase, loading, playsLeft]);
+
+  useEffect(() => {
+    offsetRef.current = INITIAL_SWEEP_OFFSET;
+    directionRef.current = 1;
+    setClawOffset(INITIAL_SWEEP_OFFSET);
+    resetClawVisualState();
+    setMessage("Time your shot and drop the claw.");
+  }, [userId]);
 
   const playTone = (frequency: number, duration = 0.12, type: OscillatorType = "square") => {
     const AudioCtx =
@@ -249,9 +265,7 @@ export function ClawMachine({
     }
 
     setLoading(true);
-    setRevealedReward(null);
-    setShowConfetti(false);
-    setConfettiPieces([]);
+    resetClawVisualState();
     clearWorkflowTimeouts();
     playSequence("button");
 
@@ -328,9 +342,7 @@ export function ClawMachine({
 
     setPhase("ready");
     setMessage("Time your shot and drop the claw.");
-    setRevealedReward(null);
-    setShowConfetti(false);
-    setConfettiPieces([]);
+    resetClawVisualState();
     setLoading(false);
   };
 
@@ -355,8 +367,8 @@ export function ClawMachine({
           <div className="absolute inset-x-8 top-5 h-3 border border-secondary/50 bg-background/70" />
 
           <div
-            className="absolute left-1/2 top-8 -translate-x-1/2 transition-[margin-left] duration-150 ease-linear"
-            style={{ marginLeft: `${clawOffset}px` }}
+            className="absolute left-1/2 top-8"
+            style={{ transform: `translateX(calc(-50% + ${clawOffset}px))` }}
           >
             <div className="flex flex-col items-center">
               <div className="h-5 w-14 border border-secondary/80 bg-secondary/30 shadow-[0_0_10px_hsl(180_100%_50%/0.35)]" />

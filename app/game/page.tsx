@@ -1,9 +1,9 @@
 import { ClawMachine } from "@/components/claw-machine";
 import { SectionHeading } from "@/components/section-heading";
-import { requireUser } from "@/lib/auth";
+import { requireCustomerUser } from "@/lib/admin";
 
 export default async function GamePage() {
-  const { supabase, user } = await requireUser("/game");
+  const { supabase, user } = await requireCustomerUser("/game");
 
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await supabase

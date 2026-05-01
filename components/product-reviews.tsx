@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminStatus } from "@/hooks/use-admin-status";
 import { useAuth } from "@/hooks/use-auth";
 import type { Review } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export function ProductReviews({
   initialAverage
 }: ProductReviewsProps) {
   const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const [reviews, setReviews] = useState(initialReviews);
   const [average, setAverage] = useState(initialAverage);
   const [rating, setRating] = useState(5);
@@ -74,35 +76,45 @@ export function ProductReviews({
       </div>
 
       <form onSubmit={handleSubmit} className="pixel-border pixel-panel p-6 space-y-4">
-        <p className="pixel-heading text-xs text-white">Write A Review</p>
-        <label className="block space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-secondary">Rating</span>
-          <select
-            value={rating}
-            onChange={(event) => setRating(Number(event.target.value))}
-            className="w-full border border-white/15 bg-background/60 px-3 py-2"
-          >
-            {[5, 4, 3, 2, 1].map((value) => (
-              <option key={value} value={value}>
-                {value} - {renderStars(value)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block space-y-2">
-          <span className="text-xs uppercase tracking-[0.2em] text-secondary">Comment</span>
-          <textarea
-            required
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            className="min-h-24 w-full border border-white/15 bg-background/60 px-3 py-2"
-            placeholder="Share your experience with this product."
-          />
-        </label>
-        <button disabled={submitting} className="pixel-border px-4 py-3 text-xs">
-          {submitting ? "Posting..." : "Post Review"}
-        </button>
-        {message ? <p className="text-sm text-secondary">{message}</p> : null}
+        <p className="pixel-heading text-xs text-white">{isAdmin ? "Admin Review View" : "Write A Review"}</p>
+        {isAdmin ? (
+          <p className="text-sm text-white/70">
+            Admin accounts can read customer reviews here, but cannot submit product reviews or other shopper feedback actions.
+          </p>
+        ) : adminLoading && user ? (
+          <p className="text-sm text-white/70">Loading review controls...</p>
+        ) : (
+          <>
+            <label className="block space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-secondary">Rating</span>
+              <select
+                value={rating}
+                onChange={(event) => setRating(Number(event.target.value))}
+                className="w-full border border-white/15 bg-background/60 px-3 py-2"
+              >
+                {[5, 4, 3, 2, 1].map((value) => (
+                  <option key={value} value={value}>
+                    {value} - {renderStars(value)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2">
+              <span className="text-xs uppercase tracking-[0.2em] text-secondary">Comment</span>
+              <textarea
+                required
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                className="min-h-24 w-full border border-white/15 bg-background/60 px-3 py-2"
+                placeholder="Share your experience with this product."
+              />
+            </label>
+            <button disabled={submitting} className="pixel-border px-4 py-3 text-xs">
+              {submitting ? "Posting..." : "Post Review"}
+            </button>
+            {message ? <p className="text-sm text-secondary">{message}</p> : null}
+          </>
+        )}
       </form>
 
       <div className="space-y-4">

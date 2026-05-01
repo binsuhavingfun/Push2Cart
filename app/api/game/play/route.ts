@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/admin";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -117,6 +118,13 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Please log in to play." }, { status: 401 });
+  }
+
+  if (await isAdminUser(supabase, user.id)) {
+    return NextResponse.json(
+      { error: "Admin accounts cannot use customer mini-game rewards." },
+      { status: 403 }
+    );
   }
 
   const rateLimitResponse = await enforceRateLimit({

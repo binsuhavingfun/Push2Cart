@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminStatus } from "@/hooks/use-admin-status";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/hooks/use-cart";
 
@@ -11,9 +12,14 @@ export function AddToCartButton({
   className?: string;
 }) {
   const { addItem } = useCart();
+  const { isAdmin, loading } = useAdminStatus();
+
+  if (isAdmin) {
+    return null;
+  }
 
   return (
-    <button onClick={() => addItem(product)} className={className}>
+    <button onClick={() => addItem(product)} className={className} disabled={loading}>
       Add to Cart
     </button>
   );
