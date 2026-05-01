@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Review } from "@/lib/types";
 
@@ -21,6 +22,19 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Please log in to review products." }, { status: 401 });
+  }
+
+  const rateLimitResponse = await enforceRateLimit({
+    request,
+    scope: "reviews:create",
+    limit: 10,
+    windowSeconds: 3600,
+    userId: user.id,
+    message: "Too many review submissions. Please try again later."
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
   }
 
   const payload = (await request.json()) as ReviewPayload;

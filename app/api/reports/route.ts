@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type ReportPayload = {
@@ -23,6 +24,18 @@ function subjectLabel(reportType: string) {
 }
 
 export async function POST(request: Request) {
+  const rateLimitResponse = await enforceRateLimit({
+    request,
+    scope: "reports:create",
+    limit: 5,
+    windowSeconds: 3600,
+    message: "Too many reports were submitted from this connection. Please try again later."
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const payload = (await request.json()) as ReportPayload;
 
   const name = payload.name?.trim() ?? "";

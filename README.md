@@ -652,5 +652,43 @@ Why:
 - Confirm updated components/navbar.tsx is pushed to GitHub.
 - Hard refresh browser (Ctrl+F5) and retest on mobile width.
 
+## Order Management and Security Review
+
+### Current order management
+
+- Orders are stored in Supabase tables: `orders` for the main record and `order_items` for line items in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+- Checkout is handled by [components/checkout-form.tsx](C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx), which posts to [app/api/orders/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts).
+- After checkout, the API validates shipping data, rate-limits the request, then calls the `create_order_with_items` Postgres function to create the order, insert `order_items`, deduct stock, mark a selected voucher as used, clear the user cart, and redirect the user to [app/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx).
+- Order records currently include full name, phone, structured delivery address, ordered products, quantity, total price, order status, payment method, payment status, and order timestamp.
+- Order records now snapshot customer email, but the lifecycle is still limited compared with a fuller ops workflow such as `pending`, `confirmed`, `preparing`, `cancelled`.
+- Admin order management exists at [app/admin/orders/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx) with the table UI in [components/admin-orders-table.tsx](C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx).
+- Admins can update status through [app/api/admin/orders/[id]/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/admin/orders/[id]/route.ts), but there is no dedicated admin order details page yet.
+
+### Current security posture
+
+- Authentication is handled by Supabase Auth in [components/auth-forms.tsx](C:/Users/vinci/Documents/Push2Cart/components/auth-forms.tsx); passwords are not stored manually in this codebase.
+- Admin access is checked in [lib/admin.ts](C:/Users/vinci/Documents/Push2Cart/lib/admin.ts) and reinforced by Supabase RLS policies in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+- Public frontend code only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; server-only secrets like `RESEND_API_KEY` stay in server routes.
+- React rendering does not use `dangerouslySetInnerHTML`, which keeps obvious XSS risk low in the current UI.
+- The biggest remaining risks are business-logic gaps: COD is the only payment flow, and the order lifecycle is still limited for real operations.
+
+### Improvements added in this review
+
+- Checkout now runs through a single atomic database function so order creation, line-item insertion, stock deduction, voucher consumption, and cart clearing happen in one transaction.
+- The order API now calculates totals from database prices inside the database function instead of trusting browser-submitted prices.
+- Checkout now rejects invalid quantities, missing products, and quantities that exceed current stock before the order is finalized.
+- Orders now store `payment_method` and `payment_status`, with COD defaulting to `Cash on Delivery` and `Pending`.
+- Shared rate limiting now protects the checkout, reviews, reports, and game reward routes through [lib/rate-limit.ts](C:/Users/vinci/Documents/Push2Cart/lib/rate-limit.ts).
+- The admin orders table now includes lightweight search and basic order statistics for cleaner day-to-day operations.
+
+### Deployment note
+
+- Apply the updated [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) in Supabase before relying on the new checkout flow.
+- The schema update adds:
+- `payment_method` and `payment_status` columns on `orders`
+- `api_rate_limits` for request throttling
+- `check_rate_limit(...)` for shared API protection
+- `create_order_with_items(...)` for atomic order creation and stock deduction
+
 
 

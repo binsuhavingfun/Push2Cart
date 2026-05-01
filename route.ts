@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RewardPayload = {
@@ -117,19 +116,6 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Please log in to play." }, { status: 401 });
-  }
-
-  const rateLimitResponse = await enforceRateLimit({
-    request,
-    scope: "game:play",
-    limit: 12,
-    windowSeconds: 3600,
-    userId: user.id,
-    message: "Too many game requests were sent. Please slow down and try again shortly."
-  });
-
-  if (rateLimitResponse) {
-    return rateLimitResponse;
   }
 
   const payload = (await request.json()) as RewardPayload;

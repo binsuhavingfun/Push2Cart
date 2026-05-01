@@ -27,7 +27,10 @@ create table if not exists public.orders (
   total_price numeric(10, 2) not null check (total_price >= 0),
   created_at timestamptz not null default now(),
   address text not null,
+  email text,
   phone text,
+  payment_method text not null default 'Cash on Delivery',
+  payment_status text not null default 'Pending',
   full_name text,
   phone_number text,
   street_address text,
@@ -45,6 +48,32 @@ alter table public.orders add column if not exists city text;
 alter table public.orders add column if not exists province text;
 alter table public.orders add column if not exists postal_code text;
 alter table public.orders add column if not exists delivery_notes text;
+alter table public.orders add column if not exists email text;
+alter table public.orders add column if not exists payment_method text not null default 'Cash on Delivery';
+alter table public.orders add column if not exists payment_status text not null default 'Pending';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'orders_payment_method_check'
+  ) then
+    alter table public.orders
+      add constraint orders_payment_method_check
+      check (payment_method in ('Cash on Delivery'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'orders_payment_status_check'
+  ) then
+    alter table public.orders
+      add constraint orders_payment_status_check
+      check (payment_status in ('Pending', 'Paid', 'Failed', 'Refunded'));
+  end if;
+end $$;
 
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
@@ -95,6 +124,17 @@ create table if not exists public.reports (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.api_rate_limits (
+  id uuid primary key default gen_random_uuid(),
+  scope text not null,
+  identifier text not null,
+  window_start timestamptz not null,
+  request_count integer not null default 0 check (request_count >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (scope, identifier, window_start)
+);
+
 alter table public.reports add column if not exists user_id uuid references auth.users(id) on delete set null;
 alter table public.reports add column if not exists name text;
 alter table public.reports add column if not exists email text;
@@ -111,6 +151,7 @@ alter table public.game_plays enable row level security;
 alter table public.reviews enable row level security;
 alter table public.admin_users enable row level security;
 alter table public.reports enable row level security;
+alter table public.api_rate_limits enable row level security;
 
 drop policy if exists "Public products are viewable by everyone" on public.products;
 drop policy if exists "Users manage their own cart items" on public.cart_items;
@@ -246,6 +287,230 @@ using (
     where admin_users.user_id = auth.uid()
   )
 );
+
+create or replace function public.check_rate_limit(
+  p_scope text,
+  p_identifier text,
+  p_max_requests integer,
+  p_window_seconds integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_window_seconds integer := greatest(coalesce(p_window_seconds, 60), 1);
+  v_max_requests integer := greatest(coalesce(p_max_requests, 1), 1);
+  v_window_start timestamptz;
+  v_request_count integer;
+begin
+  if coalesce(trim(p_scope), '') = '' or coalesce(trim(p_identifier), '') = '' then
+    raise exception 'Rate limit scope and identifier are required.';
+  end if;
+
+  v_window_start := to_timestamp(
+    floor(extract(epoch from now()) / v_window_seconds) * v_window_seconds
+  );
+
+  insert into public.api_rate_limits (scope, identifier, window_start, request_count, updated_at)
+  values (trim(p_scope), trim(p_identifier), v_window_start, 1, now())
+  on conflict (scope, identifier, window_start)
+  do update
+    set request_count = public.api_rate_limits.request_count + 1,
+        updated_at = now()
+  returning request_count into v_request_count;
+
+  return jsonb_build_object(
+    'allowed', v_request_count <= v_max_requests,
+    'count', v_request_count,
+    'remaining', greatest(v_max_requests - v_request_count, 0),
+    'reset_at', v_window_start + make_interval(secs => v_window_seconds)
+  );
+end;
+$$;
+
+create or replace function public.create_order_with_items(
+  p_user_id uuid,
+  p_email text,
+  p_full_name text,
+  p_phone_number text,
+  p_street_address text,
+  p_barangay text,
+  p_city text,
+  p_province text,
+  p_postal_code text,
+  p_delivery_notes text,
+  p_address text,
+  p_payment_method text,
+  p_voucher_id uuid,
+  p_items jsonb
+)
+returns table (
+  order_id uuid,
+  total_price numeric,
+  payment_status text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_item_count integer;
+  v_product_count integer;
+  v_subtotal numeric(10, 2);
+  v_discount_percent integer := 0;
+  v_final_total numeric(10, 2);
+  v_order_id uuid;
+begin
+  if auth.uid() is null or auth.uid() <> p_user_id then
+    raise exception 'You are not authorized to create this order.';
+  end if;
+
+  if jsonb_typeof(p_items) <> 'array' then
+    raise exception 'Order items must be sent as an array.';
+  end if;
+
+  if p_payment_method <> 'Cash on Delivery' then
+    raise exception 'Unsupported payment method.';
+  end if;
+
+  create temporary table if not exists pg_temp.checkout_items (
+    product_id text primary key,
+    quantity integer not null check (quantity > 0)
+  ) on commit drop;
+
+  truncate pg_temp.checkout_items;
+
+  insert into pg_temp.checkout_items (product_id, quantity)
+  select
+    trim(item->>'product_id') as product_id,
+    sum((item->>'quantity')::integer) as quantity
+  from jsonb_array_elements(p_items) as item
+  where coalesce(trim(item->>'product_id'), '') <> ''
+    and coalesce(item->>'quantity', '') ~ '^\d+$'
+  group by trim(item->>'product_id');
+
+  select count(*) into v_item_count
+  from pg_temp.checkout_items;
+
+  if coalesce(v_item_count, 0) = 0 then
+    raise exception 'Your cart is empty.';
+  end if;
+
+  perform 1
+  from public.products p
+  join pg_temp.checkout_items i on i.product_id = p.id
+  for update of p;
+
+  select count(*) into v_product_count
+  from pg_temp.checkout_items i
+  join public.products p on p.id = i.product_id;
+
+  if v_product_count <> v_item_count then
+    raise exception 'One or more products in your cart are no longer available.';
+  end if;
+
+  if exists (
+    select 1
+    from public.products p
+    join pg_temp.checkout_items i on i.product_id = p.id
+    where p.stock < i.quantity
+  ) then
+    raise exception 'Some items in your cart exceed available stock.';
+  end if;
+
+  select coalesce(sum(p.price * i.quantity), 0)::numeric(10, 2) into v_subtotal
+  from public.products p
+  join pg_temp.checkout_items i on i.product_id = p.id;
+
+  if p_voucher_id is not null then
+    select discount_percent into v_discount_percent
+    from public.vouchers
+    where id = p_voucher_id
+      and user_id = p_user_id
+      and is_used = false;
+
+    if v_discount_percent is null then
+      raise exception 'Selected voucher is not available.';
+    end if;
+  end if;
+
+  v_final_total := greatest(v_subtotal - (v_subtotal * (v_discount_percent / 100.0)), 0)::numeric(10, 2);
+
+  insert into public.orders (
+    user_id,
+    status,
+    total_price,
+    address,
+    email,
+    phone,
+    payment_method,
+    payment_status,
+    full_name,
+    phone_number,
+    street_address,
+    barangay,
+    city,
+    province,
+    postal_code,
+    delivery_notes
+  )
+  values (
+    p_user_id,
+    'Order Placed',
+    v_final_total,
+    p_address,
+    nullif(trim(coalesce(p_email, '')), ''),
+    p_phone_number,
+    p_payment_method,
+    'Pending',
+    p_full_name,
+    p_phone_number,
+    p_street_address,
+    p_barangay,
+    p_city,
+    p_province,
+    p_postal_code,
+    nullif(p_delivery_notes, '')
+  )
+  returning id into v_order_id;
+
+  insert into public.order_items (order_id, product_id, quantity, price)
+  select
+    v_order_id,
+    p.id,
+    i.quantity,
+    p.price
+  from pg_temp.checkout_items i
+  join public.products p on p.id = i.product_id;
+
+  update public.products p
+  set stock = p.stock - i.quantity
+  from pg_temp.checkout_items i
+  where p.id = i.product_id;
+
+  if p_voucher_id is not null then
+    update public.vouchers
+    set is_used = true
+    where id = p_voucher_id
+      and user_id = p_user_id
+      and is_used = false;
+  end if;
+
+  delete from public.cart_items
+  where user_id = p_user_id;
+
+  return query
+  select v_order_id, v_final_total, 'Pending'::text;
+end;
+$$;
+
+revoke all on function public.check_rate_limit(text, text, integer, integer) from public;
+grant execute on function public.check_rate_limit(text, text, integer, integer) to anon, authenticated;
+
+revoke all on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) from public;
+grant execute on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) to authenticated;
 
 insert into public.products (id, name, description, price, image_url, stock)
 values

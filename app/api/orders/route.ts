@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/types";
 import {
@@ -39,6 +40,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please log in before checkout." }, { status: 401 });
   }
 
+  const rateLimitResponse = await enforceRateLimit({
+    request,
+    scope: "orders:create",
+    limit: 5,
+    windowSeconds: 600,
+    userId: user.id,
+    message: "Too many checkout attempts. Please wait a few minutes before trying again."
+  });
+
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const payload = (await request.json()) as OrderPayload;
   const normalizedAddress = normalizeShippingAddress({
     fullName: payload.fullName,
@@ -56,6 +70,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
   }
 
+  const normalizedItems = Array.from(
+    payload.items.reduce((accumulator, item) => {
+      const productId = item.product_id?.trim();
+      const quantity = Math.trunc(Number(item.quantity));
+
+      if (!productId || !Number.isFinite(quantity) || quantity <= 0) {
+        return accumulator;
+      }
+
+      accumulator.set(productId, (accumulator.get(productId) ?? 0) + quantity);
+      return accumulator;
+    }, new Map<string, number>())
+  ).map(([product_id, quantity]) => ({ product_id, quantity }));
+
+  if (!normalizedItems.length) {
+    return NextResponse.json({ error: "Your cart contains invalid item data." }, { status: 400 });
+  }
+
   if (Object.keys(addressErrors).length > 0) {
     const firstError = Object.values(addressErrors)[0];
     return NextResponse.json(
@@ -64,91 +96,32 @@ export async function POST(request: Request) {
     );
   }
 
-  const calculatedSubtotal = payload.items.reduce(
-    (sum, item) => sum + Number(item.product.price) * Number(item.quantity),
-    0
-  );
-
-  let discountPercent = 0;
-
-  if (payload.voucherId) {
-    const { data: voucher, error: voucherError } = await supabase
-      .from("vouchers")
-      .select("id, discount_percent, is_used")
-      .eq("id", payload.voucherId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (voucherError) {
-      return NextResponse.json({ error: voucherError.message }, { status: 500 });
-    }
-
-    if (!voucher || voucher.is_used) {
-      return NextResponse.json({ error: "Selected voucher is not available." }, { status: 400 });
-    }
-
-    discountPercent = Number(voucher.discount_percent);
-  }
-
-  const discountAmount = calculatedSubtotal * (discountPercent / 100);
-  const finalTotal = Math.max(calculatedSubtotal - discountAmount, 0);
-
   const estimatedDelivery = getDeliveryEstimate(normalizedAddress.province);
+  const { data, error } = await supabase.rpc("create_order_with_items", {
+    p_user_id: user.id,
+    p_email: user.email ?? null,
+    p_full_name: normalizedAddress.fullName,
+    p_phone_number: normalizedAddress.phoneNumber,
+    p_street_address: normalizedAddress.streetAddress,
+    p_barangay: normalizedAddress.barangay,
+    p_city: normalizedAddress.city,
+    p_province: normalizedAddress.province,
+    p_postal_code: normalizedAddress.postalCode,
+    p_delivery_notes: normalizedAddress.deliveryNotes,
+    p_address: buildAddressLine(normalizedAddress),
+    p_payment_method: "Cash on Delivery",
+    p_voucher_id: payload.voucherId ?? null,
+    p_items: normalizedItems
+  });
 
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert({
-      user_id: user.id,
-      status: "Order Placed",
-      total_price: finalTotal,
-      address: buildAddressLine(normalizedAddress),
-      phone: normalizedAddress.phoneNumber,
-      full_name: normalizedAddress.fullName,
-      phone_number: normalizedAddress.phoneNumber,
-      street_address: normalizedAddress.streetAddress,
-      barangay: normalizedAddress.barangay,
-      city: normalizedAddress.city,
-      province: normalizedAddress.province,
-      postal_code: normalizedAddress.postalCode,
-      delivery_notes: normalizedAddress.deliveryNotes
-    })
-    .select("id")
-    .single();
+  const order = Array.isArray(data) ? data[0] : data;
 
-  if (orderError || !order) {
-    return NextResponse.json({ error: orderError?.message ?? "Order creation failed." }, { status: 500 });
+  if (error || !order?.order_id) {
+    return NextResponse.json({ error: error?.message ?? "Order creation failed." }, { status: 400 });
   }
-
-  const orderItems = payload.items.map((item) => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    price: item.product.price
-  }));
-
-  const { error: itemError } = await supabase.from("order_items").insert(orderItems);
-
-  if (itemError) {
-    return NextResponse.json({ error: itemError.message }, { status: 500 });
-  }
-
-  if (payload.voucherId) {
-    const { error: voucherUpdateError } = await supabase
-      .from("vouchers")
-      .update({ is_used: true })
-      .eq("id", payload.voucherId)
-      .eq("user_id", user.id)
-      .eq("is_used", false);
-
-    if (voucherUpdateError) {
-      return NextResponse.json({ error: voucherUpdateError.message }, { status: 500 });
-    }
-  }
-
-  await supabase.from("cart_items").delete().eq("user_id", user.id);
 
   return NextResponse.json({
-    orderId: order.id,
+    orderId: order.order_id,
     estimatedDeliveryDays: estimatedDelivery.days,
     estimatedDeliveryArea: estimatedDelivery.areaLabel
   });

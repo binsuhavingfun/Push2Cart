@@ -28,13 +28,20 @@ export type OrderStatus =
   | "Out for Delivery"
   | "Delivered";
 
+export type PaymentMethod = "Cash on Delivery";
+
+export type PaymentStatus = "Pending" | "Paid" | "Failed" | "Refunded";
+
 export type Order = {
   id: string;
   user_id: string;
   status: OrderStatus;
+  payment_method?: PaymentMethod | null;
+  payment_status?: PaymentStatus | null;
   total_price: number;
   created_at: string;
   address: string;
+  email?: string | null;
   phone?: string | null;
   full_name?: string | null;
   phone_number?: string | null;

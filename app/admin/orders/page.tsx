@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/admin";
 type AdminOrderRow = {
   id: string;
   full_name: string | null;
+  email?: string | null;
   address: string;
   street_address?: string | null;
   barangay?: string | null;
@@ -12,6 +13,8 @@ type AdminOrderRow = {
   province?: string | null;
   postal_code?: string | null;
   total_price: number;
+  payment_method?: "Cash on Delivery" | null;
+  payment_status?: "Pending" | "Paid" | "Failed" | "Refunded" | null;
   status: "Order Placed" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered";
   created_at: string;
 };
@@ -20,7 +23,7 @@ export default async function AdminOrdersPage() {
   const { supabase } = await requireAdmin("/admin/orders");
   const { data } = await supabase
     .from("orders")
-    .select("id, full_name, address, street_address, barangay, city, province, postal_code, total_price, status, created_at")
+    .select("id, full_name, email, address, street_address, barangay, city, province, postal_code, total_price, payment_method, payment_status, status, created_at")
     .order("created_at", { ascending: false });
 
   return (
