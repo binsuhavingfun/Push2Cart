@@ -662,7 +662,7 @@ Why:
 - Order records currently include full name, phone, structured delivery address, ordered products, quantity, total price, order status, payment method, payment status, and order timestamp.
 - Order records now snapshot customer email, but the lifecycle is still limited compared with a fuller ops workflow such as `pending`, `confirmed`, `preparing`, `cancelled`.
 - Admin order management exists at [app/admin/orders/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx) with the table UI in [components/admin-orders-table.tsx](C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx).
-- Admins can update status through [app/api/admin/orders/[id]/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/admin/orders/[id]/route.ts), but there is no dedicated admin order details page yet.
+- Admins can update status through [app/api/admin/orders/[id]/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/admin/orders/[id]/route.ts), and a dedicated admin order details page now lives at [app/admin/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/[id]/page.tsx).
 
 ### Current security posture
 
@@ -671,6 +671,7 @@ Why:
 - Public frontend code only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; server-only secrets like `RESEND_API_KEY` stay in server routes.
 - React rendering does not use `dangerouslySetInnerHTML`, which keeps obvious XSS risk low in the current UI.
 - The biggest remaining risks are business-logic gaps: COD is the only payment flow, and the order lifecycle is still limited for real operations.
+- Validation and monitoring are stronger than before, but still lighter than a full production commerce stack.
 
 ### Improvements added in this review
 
@@ -680,6 +681,8 @@ Why:
 - Orders now store `payment_method` and `payment_status`, with COD defaulting to `Cash on Delivery` and `Pending`.
 - Shared rate limiting now protects the checkout, reviews, reports, and game reward routes through [lib/rate-limit.ts](C:/Users/vinci/Documents/Push2Cart/lib/rate-limit.ts).
 - The admin orders table now includes lightweight search and basic order statistics for cleaner day-to-day operations.
+- Admins can now open a dedicated order details view with customer, delivery, payment, and line-item information.
+- Order updates now leave a status activity trail, and the write APIs use tighter server-side input normalization and checks.
 
 ### Deployment note
 

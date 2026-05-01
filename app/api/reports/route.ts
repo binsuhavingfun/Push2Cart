@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { isReasonableEmail, normalizeLongText, normalizeShortText } from "@/lib/validation";
 
 type ReportPayload = {
   name?: string;
@@ -9,7 +10,6 @@ type ReportPayload = {
   message?: string;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUPPORT_EMAIL = "vincetarogpaglicawan@gmail.com";
 
 function subjectLabel(reportType: string) {
@@ -38,10 +38,10 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as ReportPayload;
 
-  const name = payload.name?.trim() ?? "";
-  const email = payload.email?.trim() ?? "";
-  const reportType = payload.reportType?.trim() ?? "";
-  const message = payload.message?.trim() ?? "";
+  const name = normalizeShortText(payload.name, 120);
+  const email = normalizeShortText(payload.email, 160);
+  const reportType = normalizeShortText(payload.reportType, 80);
+  const message = normalizeLongText(payload.message, 1200);
 
   if (!reportType) {
     return NextResponse.json({ error: "Please select a report type." }, { status: 400 });
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please enter your message." }, { status: 400 });
   }
 
-  if (email && !EMAIL_REGEX.test(email)) {
+  if (email && !isReasonableEmail(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 

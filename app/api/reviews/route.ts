@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Review } from "@/lib/types";
+import { normalizeLongText } from "@/lib/validation";
 
 type ReviewPayload = {
   productId: string;
@@ -39,9 +40,10 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as ReviewPayload;
   const safeRating = Math.max(1, Math.min(5, Number(payload.rating)));
-  const safeComment = payload.comment?.trim();
+  const safeComment = normalizeLongText(payload.comment, 500);
+  const safeProductId = typeof payload.productId === "string" ? payload.productId.trim() : "";
 
-  if (!payload.productId || !safeComment) {
+  if (!safeProductId || !safeProductId.startsWith("prod-") || !safeComment) {
     return NextResponse.json({ error: "Rating and comment are required." }, { status: 400 });
   }
 
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
     .from("reviews")
     .insert({
       user_id: user.id,
-      product_id: payload.productId,
+      product_id: safeProductId,
       rating: safeRating,
       comment: safeComment,
       username
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
   const { data: ratings } = await supabase
     .from("reviews")
     .select("rating")
-    .eq("product_id", payload.productId);
+    .eq("product_id", safeProductId);
 
   const average =
     ratings && ratings.length

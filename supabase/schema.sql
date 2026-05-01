@@ -83,6 +83,17 @@ create table if not exists public.order_items (
   price numeric(10, 2) not null check (price >= 0)
 );
 
+create table if not exists public.order_status_events (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  status text not null check (
+    status in ('Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered')
+  ),
+  note text,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.vouchers (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -146,6 +157,7 @@ alter table public.products enable row level security;
 alter table public.cart_items enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
+alter table public.order_status_events enable row level security;
 alter table public.vouchers enable row level security;
 alter table public.game_plays enable row level security;
 alter table public.reviews enable row level security;
@@ -160,6 +172,9 @@ drop policy if exists "Users create their own orders" on public.orders;
 drop policy if exists "Users update orders as admin" on public.orders;
 drop policy if exists "Users view their own order items" on public.order_items;
 drop policy if exists "Users create their own order items" on public.order_items;
+drop policy if exists "Users view their own order status events" on public.order_status_events;
+drop policy if exists "Admins can view all order status events" on public.order_status_events;
+drop policy if exists "Admins can create order status events" on public.order_status_events;
 drop policy if exists "Users manage their own vouchers" on public.vouchers;
 drop policy if exists "Users manage their own game plays" on public.game_plays;
 drop policy if exists "Anyone can view reviews" on public.reviews;
@@ -167,6 +182,8 @@ drop policy if exists "Authenticated users create reviews" on public.reviews;
 drop policy if exists "Users read own admin row" on public.admin_users;
 drop policy if exists "Anyone can submit reports" on public.reports;
 drop policy if exists "Admins can read reports" on public.reports;
+drop policy if exists "Admins can view all orders" on public.orders;
+drop policy if exists "Admins can view all order items" on public.order_items;
 
 create policy "Public products are viewable by everyone"
 on public.products
@@ -192,6 +209,18 @@ on public.orders
 for insert
 to authenticated
 with check (auth.uid() = user_id);
+
+create policy "Admins can view all orders"
+on public.orders
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
 
 create policy "Users update orders as admin"
 on public.orders
@@ -222,6 +251,18 @@ using (
     from public.orders
     where orders.id = order_items.order_id
       and orders.user_id = auth.uid()
+  )
+);
+
+create policy "Admins can view all order items"
+on public.order_items
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
   )
 );
 
@@ -281,6 +322,43 @@ on public.reports
 for select
 to authenticated
 using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+create policy "Users view their own order status events"
+on public.order_status_events
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.orders
+    where orders.id = order_status_events.order_id
+      and orders.user_id = auth.uid()
+  )
+);
+
+create policy "Admins can view all order status events"
+on public.order_status_events
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+create policy "Admins can create order status events"
+on public.order_status_events
+for insert
+to authenticated
+with check (
   exists (
     select 1
     from public.admin_users
@@ -484,6 +562,9 @@ begin
     p.price
   from pg_temp.checkout_items i
   join public.products p on p.id = i.product_id;
+
+  insert into public.order_status_events (order_id, status, note, actor_user_id)
+  values (v_order_id, 'Order Placed', 'Order created at checkout', p_user_id);
 
   update public.products p
   set stock = p.stock - i.quantity

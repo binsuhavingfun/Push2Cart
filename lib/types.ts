@@ -53,6 +53,15 @@ export type Order = {
   delivery_notes?: string | null;
 };
 
+export type OrderStatusEvent = {
+  id: string;
+  order_id: string;
+  status: OrderStatus;
+  note?: string | null;
+  created_at: string;
+  actor_user_id?: string | null;
+};
+
 export type Voucher = {
   id: string;
   user_id: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { OrderStatus, PaymentMethod, PaymentStatus } from "@/lib/types";
 
@@ -187,7 +188,11 @@ export function AdminOrdersTable({ initialOrders }: { initialOrders: AdminOrder[
           <tbody>
             {filteredOrders.map((order) => (
               <tr key={order.id} className="border-t border-white/10">
-                <td className="py-3">{order.id.slice(0, 8)}</td>
+                <td className="py-3">
+                  <Link href={`/admin/orders/${order.id}`} className="text-secondary hover:text-white">
+                    {order.id.slice(0, 8)}
+                  </Link>
+                </td>
                 <td className="py-3">{order.full_name ?? "Customer"}</td>
                 <td className="py-3">{order.email ?? "No email"}</td>
                 <td className="py-3">{formatAddress(order)}</td>

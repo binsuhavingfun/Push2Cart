@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/types";
+import { normalizeLongText, normalizeShortText, isUuid } from "@/lib/validation";
 import {
   buildAddressLine,
   getDeliveryEstimate,
@@ -55,14 +56,14 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as OrderPayload;
   const normalizedAddress = normalizeShippingAddress({
-    fullName: payload.fullName,
-    phoneNumber: payload.phone,
-    streetAddress: payload.streetAddress,
-    barangay: payload.barangay,
-    city: payload.city,
-    province: payload.province,
-    postalCode: payload.postalCode,
-    deliveryNotes: payload.deliveryNotes ?? ""
+    fullName: normalizeShortText(payload.fullName, 120),
+    phoneNumber: normalizeShortText(payload.phone, 32),
+    streetAddress: normalizeLongText(payload.streetAddress, 180),
+    barangay: normalizeShortText(payload.barangay, 120),
+    city: normalizeShortText(payload.city, 120),
+    province: normalizeShortText(payload.province, 120),
+    postalCode: normalizeShortText(payload.postalCode, 20),
+    deliveryNotes: normalizeLongText(payload.deliveryNotes ?? "", 240)
   });
   const addressErrors = validateShippingAddress(normalizedAddress);
 
@@ -86,6 +87,10 @@ export async function POST(request: Request) {
 
   if (!normalizedItems.length) {
     return NextResponse.json({ error: "Your cart contains invalid item data." }, { status: 400 });
+  }
+
+  if (payload.voucherId && !isUuid(payload.voucherId)) {
+    return NextResponse.json({ error: "Invalid voucher reference." }, { status: 400 });
   }
 
   if (Object.keys(addressErrors).length > 0) {

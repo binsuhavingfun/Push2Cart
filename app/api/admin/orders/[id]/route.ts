@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
+import { isUuid } from "@/lib/validation";
 
 const allowedStatuses: OrderStatus[] = [
   "Order Placed",
@@ -16,6 +17,10 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const supabase = await getSupabaseServerClient();
+
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Invalid order ID." }, { status: 400 });
+  }
 
   if (!supabase) {
     return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
@@ -45,6 +50,16 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status value." }, { status: 400 });
   }
 
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!existingOrder) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
   const { error } = await supabase
     .from("orders")
     .update({ status: payload.status })
@@ -52,6 +67,15 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (existingOrder.status !== payload.status) {
+    await supabase.from("order_status_events").insert({
+      order_id: id,
+      status: payload.status,
+      actor_user_id: user.id,
+      note: "Updated from admin dashboard"
+    });
   }
 
   return NextResponse.json({ success: true });
