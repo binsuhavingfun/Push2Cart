@@ -5,19 +5,23 @@ import type { OrderStatus } from "@/lib/types";
 import { isUuid } from "@/lib/validation";
 
 const allowedStatuses: OrderStatus[] = [
-  "Order Placed",
-  "Packed",
+  "Pending",
+  "Confirmed",
+  "Preparing",
   "Shipped",
   "Out for Delivery",
-  "Delivered"
+  "Delivered",
+  "Cancelled"
 ];
 
 const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
-  "Order Placed": ["Packed"],
-  "Packed": ["Shipped"],
+  "Pending": ["Confirmed", "Cancelled"],
+  "Confirmed": ["Preparing", "Cancelled"],
+  "Preparing": ["Shipped", "Cancelled"],
   "Shipped": ["Out for Delivery"],
   "Out for Delivery": ["Delivered"],
-  "Delivered": []
+  "Delivered": [],
+  "Cancelled": []
 };
 
 export async function PATCH(

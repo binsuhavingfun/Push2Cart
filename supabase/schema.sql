@@ -21,8 +21,8 @@ create table if not exists public.cart_items (
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  status text not null default 'Order Placed' check (
-    status in ('Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered')
+  status text not null default 'Pending' check (
+    status in ('Pending', 'Confirmed', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled')
   ),
   total_price numeric(10, 2) not null check (total_price >= 0),
   created_at timestamptz not null default now(),
@@ -54,6 +54,11 @@ alter table public.orders add column if not exists payment_status text not null 
 
 do $$
 begin
+  alter table public.orders drop constraint if exists orders_status_check;
+  alter table public.orders
+    add constraint orders_status_check
+    check (status in ('Pending', 'Confirmed', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'));
+
   if not exists (
     select 1
     from pg_constraint
@@ -87,7 +92,7 @@ create table if not exists public.order_status_events (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references public.orders(id) on delete cascade,
   status text not null check (
-    status in ('Order Placed', 'Packed', 'Shipped', 'Out for Delivery', 'Delivered')
+    status in ('Pending', 'Confirmed', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled')
   ),
   note text,
   actor_user_id uuid references auth.users(id) on delete set null,
@@ -560,7 +565,7 @@ begin
   )
   values (
     p_user_id,
-    'Order Placed',
+    'Pending',
     v_final_total,
     p_address,
     nullif(trim(coalesce(p_email, '')), ''),
@@ -588,7 +593,7 @@ begin
   join public.products p on p.id = i.product_id;
 
   insert into public.order_status_events (order_id, status, note, actor_user_id)
-  values (v_order_id, 'Order Placed', 'Order created at checkout', p_user_id);
+  values (v_order_id, 'Pending', 'Order created at checkout', p_user_id);
 
   update public.products p
   set stock = p.stock - i.quantity

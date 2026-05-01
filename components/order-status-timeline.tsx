@@ -2,8 +2,9 @@ import { cn } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
 
 const steps: OrderStatus[] = [
-  "Order Placed",
-  "Packed",
+  "Pending",
+  "Confirmed",
+  "Preparing",
   "Shipped",
   "Out for Delivery",
   "Delivered"
@@ -16,6 +17,7 @@ export function OrderStatusTimeline({
   status: OrderStatus;
   region: "Metro" | "Provincial";
 }) {
+  const isCancelled = status === "Cancelled";
   const activeIndex = steps.findIndex((step) => step === status);
 
   return (
@@ -28,11 +30,23 @@ export function OrderStatusTimeline({
             {region === "Metro" ? "Metro Manila" : "Provincial"})
           </p>
         </div>
-        <span className="border border-secondary/40 bg-secondary/10 px-3 py-2 text-xs uppercase tracking-[0.26em] text-secondary">
+        <span
+          className={cn(
+            "px-3 py-2 text-xs uppercase tracking-[0.26em]",
+            isCancelled
+              ? "border border-primary/40 bg-primary/10 text-primary"
+              : "border border-secondary/40 bg-secondary/10 text-secondary"
+          )}
+        >
           {status}
         </span>
       </div>
-      <div className="grid gap-4 md:grid-cols-5">
+      {isCancelled ? (
+        <div className="mb-6 border border-primary/30 bg-primary/10 px-4 py-4 text-sm text-white/85">
+          This order was cancelled before delivery.
+        </div>
+      ) : null}
+      <div className="grid gap-4 md:grid-cols-6">
         {steps.map((step, index) => (
           <div key={step} className="relative">
             <div

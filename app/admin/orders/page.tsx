@@ -15,7 +15,14 @@ type AdminOrderRow = {
   total_price: number;
   payment_method?: "Cash on Delivery" | null;
   payment_status?: "Pending" | "Paid" | "Failed" | "Refunded" | null;
-  status: "Order Placed" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered";
+  status:
+    | "Pending"
+    | "Confirmed"
+    | "Preparing"
+    | "Shipped"
+    | "Out for Delivery"
+    | "Delivered"
+    | "Cancelled";
   created_at: string;
 };
 

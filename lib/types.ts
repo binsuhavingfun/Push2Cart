@@ -22,11 +22,13 @@ export type AuthUser = {
 };
 
 export type OrderStatus =
-  | "Order Placed"
-  | "Packed"
+  | "Pending"
+  | "Confirmed"
+  | "Preparing"
   | "Shipped"
   | "Out for Delivery"
-  | "Delivered";
+  | "Delivered"
+  | "Cancelled";
 
 export type PaymentMethod = "Cash on Delivery";
 

@@ -4,11 +4,13 @@ import { useState } from "react";
 import type { OrderStatus } from "@/lib/types";
 
 const statuses: OrderStatus[] = [
-  "Order Placed",
-  "Packed",
+  "Pending",
+  "Confirmed",
+  "Preparing",
   "Shipped",
   "Out for Delivery",
-  "Delivered"
+  "Delivered",
+  "Cancelled"
 ];
 
 export function AdminOrderStatusSelect({

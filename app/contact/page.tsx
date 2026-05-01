@@ -11,13 +11,28 @@ export default function ContactPage() {
       />
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          ["Email", "vincetarogpaglicawan@gmail.com"],
-          ["Phone", "+63 900 000 0000"],
-          ["Hours", "Open daily, 9:00 AM - 6:00 PM (Philippine Time, GMT+8)"]
-        ].map(([label, value]) => (
+          { label: "Email", value: "vincetarogpaglicawan@gmail.com" },
+          {
+            label: "GitHub",
+            value: "https://github.com/binsuhavingfun",
+            href: "https://github.com/binsuhavingfun"
+          },
+          { label: "Hours", value: "Open daily, 9:00 AM - 6:00 PM (Philippine Time, GMT+8)" }
+        ].map(({ label, value, href }) => (
           <div key={label} className="pixel-border pixel-panel p-5">
             <p className="pixel-heading text-xs text-white">{label}</p>
-            <p className="mt-3 text-white/75">{value}</p>
+            {href ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 block text-white/75 hover:text-white"
+              >
+                {value}
+              </a>
+            ) : (
+              <p className="mt-3 text-white/75">{value}</p>
+            )}
           </div>
         ))}
       </div>

@@ -23,11 +23,13 @@ type AdminOrder = {
 };
 
 const statuses: OrderStatus[] = [
-  "Order Placed",
-  "Packed",
+  "Pending",
+  "Confirmed",
+  "Preparing",
   "Shipped",
   "Out for Delivery",
-  "Delivered"
+  "Delivered",
+  "Cancelled"
 ];
 
 export function AdminOrdersTable({ initialOrders }: { initialOrders: AdminOrder[] }) {
@@ -114,7 +116,9 @@ export function AdminOrdersTable({ initialOrders }: { initialOrders: AdminOrder[
   });
 
   const totalOrders = orders.length;
-  const pendingOrders = orders.filter((order) => order.status !== "Delivered").length;
+  const pendingOrders = orders.filter(
+    (order) => !["Delivered", "Cancelled"].includes(order.status)
+  ).length;
   const completedOrders = orders.filter((order) => order.status === "Delivered").length;
 
   return (

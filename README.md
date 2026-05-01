@@ -660,7 +660,7 @@ Why:
 - Checkout is handled by [components/checkout-form.tsx](C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx), which posts to [app/api/orders/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts).
 - After checkout, the API validates shipping data, rate-limits the request, then calls the `create_order_with_items` Postgres function to create the order, insert `order_items`, deduct stock, mark a selected voucher as used, clear the user cart, and redirect the user to [app/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx).
 - Order records currently include full name, phone, structured delivery address, ordered products, quantity, total price, order status, payment method, payment status, and order timestamp.
-- Order records now snapshot customer email, but the lifecycle is still limited compared with a fuller ops workflow such as `pending`, `confirmed`, `preparing`, `cancelled`.
+- Order records now snapshot customer email, and the lifecycle supports `pending`, `confirmed`, `preparing`, `shipped`, `out for delivery`, `delivered`, and `cancelled`.
 - Admin order management exists at [app/admin/orders/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx) with the table UI in [components/admin-orders-table.tsx](C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx).
 - Admins can update status through [app/api/admin/orders/[id]/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/admin/orders/[id]/route.ts), and a dedicated admin order details page now lives at [app/admin/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/[id]/page.tsx).
 
@@ -670,7 +670,7 @@ Why:
 - Admin access is checked in [lib/admin.ts](C:/Users/vinci/Documents/Push2Cart/lib/admin.ts) and reinforced by Supabase RLS policies in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
 - Public frontend code only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; server-only secrets like `RESEND_API_KEY` stay in server routes.
 - React rendering does not use `dangerouslySetInnerHTML`, which keeps obvious XSS risk low in the current UI.
-- The biggest remaining risks are business-logic gaps: COD is the only payment flow, and the order lifecycle is still limited for real operations.
+- The biggest remaining risks are business-logic gaps: COD is the only payment flow.
 - Validation and monitoring are stronger than before, but still lighter than a full production commerce stack.
 
 ### Improvements added in this review
@@ -684,6 +684,7 @@ Why:
 - Admins can now open a dedicated order details view with customer, delivery, payment, and line-item information.
 - Order updates now leave a status activity trail, and the write APIs use tighter server-side input normalization and checks.
 - Checkout now verifies that the posted cart matches the authenticated server-side cart, limits oversized orders, and blocks immediate duplicate submissions from the same account/address.
+- The order lifecycle now follows a more practical operations flow with forward-only transitions and cancellation before shipment.
 
 ### Deployment note
 
