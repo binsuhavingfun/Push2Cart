@@ -12,7 +12,7 @@ Push2Cart is a gamified shopping website with a retro arcade style. Users can br
 
 ## Homepage Featured Description
 
-Browse a few featured picks, grab what you like, and keep shopping simple.
+Shop featured picks. Keep it simple.
 
 ## Features
 
@@ -27,7 +27,7 @@ Browse a few featured picks, grab what you like, and keep shopping simple.
 - Daily claw machine mini-game with automatic left-right claw movement, timed drop play, and generated sound effects
 - Product review system with 1-5 star ratings and comments
 - Admin dashboard, admin orders view, and admin reports management pages
-- Footer with helpful links plus creator contact details
+- Footer with role-based Explore links and creator contact details
 - About and Report pages with built-in pixel illustrations
 - Supabase-ready RLS policies for products, carts, orders, vouchers, and game plays
 
@@ -35,12 +35,14 @@ Browse a few featured picks, grab what you like, and keep shopping simple.
 
 - Navbar:
   - Guest: `Home`, `Products`, `Mini Game`, `About`, `Report`, `Login`
-  - Customer: `Home`, `Products`, `Mini Game`, `About`, `Report`, `Cart`, `Profile`
-  - Admin: `Dashboard`, `Orders`, `Reports`, `Logout`
+  - Customer: `Home`, `Products`, `Mini Game`, `Cart`, `Profile`
+  - Admin: `Dashboard`, `Orders`, `Reports`, `Profile`, `Logout`
 - Footer:
   - Push2Cart branding
   - `Play. Shop. Save.` tagline
-  - Helpful links: `About`, `Products`, `Mini Game`, `Report`
+  - `Explore` links for guests and customers: `Products`, `Mini Game`, `About`, `Report`
+  - Customer footer also includes `Profile`
+  - Admin footer is simplified and does not repeat admin navigation links
   - Creator contact details: email, GitHub, support hours
 - Customer profile route: `/account`
   - `My Account`
@@ -119,7 +121,7 @@ npm run dev
 - The claw machine uses CSS animations and generated Web Audio sounds, not external audio assets.
 - Voucher rewards are stored in `vouchers`, daily play counts are tracked in `game_plays`, and selected vouchers are marked as used on checkout.
 - Product reviews are stored in `reviews` and linked to each product detail page.
-- Footer now shows Push2Cart branding, helpful links, creator contact details, GitHub (`https://github.com/binsuhavingfun`), and support hours.
+- Footer now shows Push2Cart branding, creator contact details, GitHub (`https://github.com/binsuhavingfun`), support hours, and role-based `Explore` links for guest and customer views.
 
 ## Role Separation
 
@@ -645,6 +647,34 @@ Why:
 - `api_rate_limits` for request throttling
 - `check_rate_limit(...)` for shared API protection
 - `create_order_with_items(...)` for atomic order creation and stock deduction
+
+## Production Readiness Checklist
+
+Push2Cart is now in a strong demo and MVP state, but public production use still needs a few business and operations layers before it should be treated as a live storefront.
+
+### High priority before public launch
+
+- Remove or limit product fallback to local mock data in production so live product reads never silently mask database problems.
+- Verify the live Vercel deployment end to end with guest, customer, and admin accounts after every important Supabase schema update.
+- Add automated tests for checkout, role restrictions, admin order updates, and key customer flows.
+- Add production error monitoring and alerting so failed checkouts, broken routes, and server errors are visible quickly.
+- Document a safe deployment and rollback process for Vercel and Supabase schema changes.
+
+### Important next improvements
+
+- Decide whether Cash on Delivery is enough or whether the project needs a real online payment provider with webhook verification.
+- Add stronger fraud and abuse controls if traffic grows, such as CAPTCHA or Turnstile on abuse-prone public actions.
+- Add clearer store policies for shipping, returns, refunds, privacy, and support expectations.
+- Add a more complete admin operations layer if the site will handle real products, including product and inventory management.
+- Add regular backup and recovery habits for important production data.
+
+### Final production checks
+
+- Confirm all required environment variables are set correctly in Vercel.
+- Confirm all required Supabase SQL changes from [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) are applied to the live database.
+- Test mobile and desktop flows for guest, customer, and admin accounts.
+- Confirm there are no obvious browser console errors on important pages such as Home, Products, Cart, Checkout, Profile, Orders, Admin Orders, and the Mini Game.
+- Confirm the footer, navbar, profile flows, report page, and admin dashboard all reflect the current implemented routes and role rules.
 
 
 

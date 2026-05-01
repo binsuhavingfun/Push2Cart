@@ -9,12 +9,18 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-const links = [
+const guestLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Products" },
   { href: "/game", label: "Mini Game" },
   { href: "/about", label: "About" },
   { href: "/report", label: "Report" }
+];
+
+const customerLinks = [
+  { href: "/", label: "Home" },
+  { href: "/products", label: "Products" },
+  { href: "/game", label: "Mini Game" }
 ];
 
 const adminLinks = [
@@ -60,7 +66,7 @@ export function Navbar() {
   const authLinkClasses =
     "pixel-border pixel-border-cyan px-3 py-2 text-white transition-transform hover:-translate-y-0.5";
   const utilityLinkClasses = "px-3 py-2 transition-colors hover:text-accent";
-  const currentLinks = user && adminLoading ? [] : isAdmin ? adminLinks : links;
+  const currentLinks = user && adminLoading ? [] : isAdmin ? adminLinks : user ? customerLinks : guestLinks;
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-primary/30 bg-background/90 backdrop-blur-md">
@@ -75,7 +81,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 lg:flex xl:gap-2">
+          <nav className="hidden items-center gap-1 pl-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 lg:flex xl:gap-2 xl:pl-3">
             {currentLinks.map((link) => (
               <Link
                 key={link.label}

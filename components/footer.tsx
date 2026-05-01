@@ -1,37 +1,58 @@
-import Link from "next/link";
+"use client";
 
-const helpfulLinks = [
-  { href: "/about", label: "About" },
+import Link from "next/link";
+import { useAdminStatus } from "@/hooks/use-admin-status";
+import { useAuth } from "@/hooks/use-auth";
+
+const guestLinks = [
   { href: "/products", label: "Products" },
   { href: "/game", label: "Mini Game" },
+  { href: "/about", label: "About" },
   { href: "/report", label: "Report" }
 ];
 
+const customerLinks = [...guestLinks, { href: "/account", label: "Profile" }];
+
 export function Footer() {
+  const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
+
+  const isAdminView = isAdmin && !adminLoading;
+  const footerLinks = user ? customerLinks : guestLinks;
+
   return (
     <footer className="relative z-10 border-t border-primary/25 bg-card/70">
-      <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-8 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
+      <div
+        className={`mx-auto grid w-full max-w-7xl gap-4 px-4 py-8 sm:px-6 lg:px-8 ${
+          isAdminView ? "lg:grid-cols-[1.5fr_1fr]" : "lg:grid-cols-[1.4fr_1fr_1fr]"
+        }`}
+      >
         <div className="pixel-border pixel-panel p-5">
-          <p className="pixel-heading text-sm text-accent">Push2Cart</p>
+          <p className="pixel-heading text-sm text-accent">
+            {isAdminView ? "Push2Cart Admin" : "Push2Cart"}
+          </p>
           <p className="mt-3 text-xs font-medium uppercase tracking-[0.32em] text-secondary">
             Play. Shop. Save.
           </p>
           <p className="mt-4 max-w-md text-sm leading-6 text-white/70">
-            A retro arcade storefront where browsing products, winning vouchers, and checking out
-            stay playful without making the shopping flow harder.
+            {isAdminView
+              ? "Admin tools and store updates."
+              : "A retro arcade storefront for products, prizes, and easy checkout."}
           </p>
         </div>
 
-        <div className="pixel-border pixel-panel p-5">
-          <p className="pixel-heading text-xs text-white">Helpful Links</p>
-          <div className="mt-4 flex flex-col gap-3 text-sm text-white/75">
-            {helpfulLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="transition-colors hover:text-white">
-                {link.label}
-              </Link>
-            ))}
+        {!isAdminView ? (
+          <div className="pixel-border pixel-panel p-5">
+            <p className="pixel-heading text-xs text-white">Explore</p>
+            <div className="mt-4 flex flex-col gap-3 text-sm text-white/75">
+              {footerLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="transition-colors hover:text-white">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="pixel-border pixel-panel p-5">
           <p className="pixel-heading text-xs text-white">Creator Contact</p>
@@ -55,9 +76,8 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 pb-6 text-[11px] uppercase tracking-[0.24em] text-white/45 sm:px-6 sm:text-xs lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <p>© 2026 Push2Cart. Built with arcade energy.</p>
-        <p>Creator contact now lives in the footer so the main nav stays focused.</p>
+      <div className="mx-auto flex w-full max-w-7xl justify-center px-4 pb-6 text-center text-[11px] uppercase tracking-[0.24em] text-white/45 sm:px-6 sm:text-xs lg:px-8">
+        <p>&copy; 2026 Push2Cart. Built with arcade energy.</p>
       </div>
     </footer>
   );

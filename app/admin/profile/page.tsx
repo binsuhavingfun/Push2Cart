@@ -17,7 +17,7 @@ export default async function AdminProfilePage() {
       <SectionHeading
         eyebrow="Admin"
         title="Admin Profile"
-        description="A management-only profile space for monitoring account access and jumping into operational tools."
+        description="Admin tools and account access."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -51,9 +51,7 @@ export default async function AdminProfilePage() {
 
         <div className="pixel-border pixel-panel p-6">
           <p className="pixel-heading text-xs text-white">Session Controls</p>
-          <p className="mt-4 text-sm leading-6 text-white/75">
-            This admin account is separated from the customer shopping flow. Cart, checkout, customer vouchers, and shopper-only actions stay disabled here.
-          </p>
+          <p className="mt-4 text-sm leading-6 text-white/75">Sign out of this admin session.</p>
           <ProfileLogoutButton className="pixel-border mt-6 w-full px-4 py-3 text-xs" />
         </div>
       </div>

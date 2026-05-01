@@ -26,7 +26,7 @@ export default async function AdminReportsPage() {
       <SectionHeading
         eyebrow="Admin"
         title="Reports and Feedback"
-        description="Monitor incoming bug reports, suggestions, and general site feedback in one management view."
+        description="Review reports, suggestions, and feedback."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -44,7 +44,7 @@ export default async function AdminReportsPage() {
 
       {!reports.length ? (
         <div className="pixel-border pixel-panel p-6 text-white/80">
-          No customer reports yet.
+          No reports yet.
         </div>
       ) : (
         <div className="space-y-4">

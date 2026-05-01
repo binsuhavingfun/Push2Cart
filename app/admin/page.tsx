@@ -22,7 +22,7 @@ export default async function AdminDashboardPage() {
       <SectionHeading
         eyebrow="Admin"
         title="Management Dashboard"
-        description="A cleaner control room for monitoring order flow, customer reports, and daily operations."
+        description="Orders, reports, and store activity."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -68,15 +68,15 @@ export default async function AdminDashboardPage() {
         <div className="space-y-4">
           <Link href="/admin/orders" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
             <p className="pixel-heading text-xs text-white">Orders Management</p>
-            <p className="mt-3 text-sm text-white/70">Open the full orders board and update statuses in real time.</p>
+            <p className="mt-3 text-sm text-white/70">View and update orders.</p>
           </Link>
           <Link href="/admin/reports" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
             <p className="pixel-heading text-xs text-white">Reports Management</p>
-            <p className="mt-3 text-sm text-white/70">Review feedback, bug reports, and support notes from users.</p>
+            <p className="mt-3 text-sm text-white/70">Review user reports and feedback.</p>
           </Link>
           <Link href="/admin/profile" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
             <p className="pixel-heading text-xs text-white">Admin Profile</p>
-            <p className="mt-3 text-sm text-white/70">See account info and jump to the operational tools you use most.</p>
+            <p className="mt-3 text-sm text-white/70">Account access and shortcuts.</p>
           </Link>
         </div>
       </div>

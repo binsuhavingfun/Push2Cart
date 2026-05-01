@@ -15,19 +15,19 @@ function LaptopIllustration() {
 
           <div className="mt-5 space-y-3 rounded-none border-2 border-primary/60 bg-[linear-gradient(180deg,_hsl(240_20%_10%),_hsl(240_20%_14%))] p-4">
             <div className="font-pixel text-[10px] leading-5 text-secondary sm:text-xs">
-              <p>&lt;code&gt;</p>
+              <p>&lt;html&gt;</p>
               <p className="pl-3 text-accent">cart.push(fun);</p>
               <p className="pl-3 text-primary">save += reward;</p>
-              <p>&lt;/code&gt;</p>
+              <p>&lt;/html&gt;</p>
             </div>
 
-            <div className="flex justify-center gap-6 pt-2">
-              <span className="h-3 w-3 bg-accent shadow-[0_0_0_2px_hsl(var(--accent)/0.2)]" />
-              <span className="h-3 w-3 bg-accent shadow-[0_0_0_2px_hsl(var(--accent)/0.2)]" />
+            <div className="flex justify-center gap-5 pt-2">
+              <span className="h-2.5 w-2.5 bg-accent" />
+              <span className="h-2.5 w-2.5 bg-accent" />
             </div>
 
             <div className="flex justify-center pt-1">
-              <div className="h-4 w-12 border-b-4 border-secondary rounded-b-[999px]" />
+              <div className="h-3 w-10 rounded-b-full border-b-[3px] border-secondary" />
             </div>
           </div>
         </div>

@@ -53,7 +53,7 @@ export default async function AccountPage() {
       <SectionHeading
         eyebrow="Profile"
         title="Customer Account"
-        description="Manage your info, review orders, track completed purchases, and keep your vouchers in one cleaner account space."
+        description="Your account, orders, and vouchers in one place."
       />
 
       <div className="grid gap-6 lg:grid-cols-[0.32fr_0.68fr] lg:items-start">
@@ -85,7 +85,7 @@ export default async function AccountPage() {
               <div>
                 <p className="pixel-heading text-xs text-white">My Account</p>
                 <h2 className="mt-3 text-xl font-semibold text-accent">{fullName}</h2>
-                <p className="mt-2 text-sm text-white/70">Customer account overview</p>
+                <p className="mt-2 text-sm text-white/70">Account overview</p>
               </div>
               <div className="grid gap-3 text-sm text-white/75 sm:grid-cols-2 md:min-w-[18rem]">
                 <div className="border border-white/10 bg-background/40 px-4 py-3">
@@ -102,7 +102,7 @@ export default async function AccountPage() {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="border border-white/10 bg-background/40 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Email</p>
-                <p className="mt-2 text-sm text-white/80">{user.email ?? "No email available"}</p>
+                <p className="mt-2 text-sm text-white/80">{user.email ?? "No email saved"}</p>
               </div>
               <div className="border border-white/10 bg-background/40 p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Contact Number</p>
@@ -124,7 +124,7 @@ export default async function AccountPage() {
             </div>
             <div className="mt-5 space-y-4">
               {!orders.length ? (
-                <p className="text-sm text-white/70">No orders yet. Your first checkout will appear here.</p>
+                <p className="text-sm text-white/70">No orders yet.</p>
               ) : (
                 orders.slice(0, 5).map((order) => (
                   <Link
@@ -151,7 +151,7 @@ export default async function AccountPage() {
             <div className="mt-5 space-y-4">
               {!deliveredOrders.length ? (
                 <p className="text-sm text-white/70">
-                  Delivered purchases will appear here once your completed orders arrive.
+                  No completed purchases yet.
                 </p>
               ) : (
                 deliveredOrders.map((order) => (
@@ -184,7 +184,7 @@ export default async function AccountPage() {
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Available</p>
                 {!activeVouchers.length ? (
-                  <p className="text-sm text-white/70">No active vouchers right now.</p>
+                  <p className="text-sm text-white/70">No active vouchers.</p>
                 ) : (
                   activeVouchers.map((voucher) => (
                     <div key={voucher.id} className="border border-secondary/30 bg-secondary/10 px-4 py-3 text-sm text-white/80">
@@ -197,7 +197,7 @@ export default async function AccountPage() {
               <div className="space-y-3">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Used</p>
                 {!usedVouchers.length ? (
-                  <p className="text-sm text-white/70">Used vouchers will appear here later.</p>
+                  <p className="text-sm text-white/70">No used vouchers yet.</p>
                 ) : (
                   usedVouchers.slice(0, 4).map((voucher) => (
                     <div key={voucher.id} className="border border-white/10 bg-background/40 px-4 py-3 text-sm text-white/65">
@@ -215,12 +215,12 @@ export default async function AccountPage() {
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="border border-white/10 bg-background/40 p-4 text-sm text-white/75">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Account Details</p>
-                <p className="mt-2">Your customer account uses your signed-in email for login and order updates.</p>
+                <p className="mt-2">Your signed-in email is used for login and order updates.</p>
               </div>
               <div className="border border-white/10 bg-background/40 p-4 text-sm text-white/75">
                 <p className="text-xs uppercase tracking-[0.2em] text-secondary">Need Help?</p>
                 <p className="mt-2">
-                  Use the <Link href="/report" className="text-secondary hover:text-white">report form</Link> if you need to send feedback or flag a problem.
+                  Use the <Link href="/report" className="text-secondary hover:text-white">report form</Link> for feedback or issues.
                 </p>
               </div>
             </div>
