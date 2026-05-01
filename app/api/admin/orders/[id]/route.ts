@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logSecurityEvent } from "@/lib/security-events";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
 import { isUuid } from "@/lib/validation";
@@ -10,6 +11,14 @@ const allowedStatuses: OrderStatus[] = [
   "Out for Delivery",
   "Delivered"
 ];
+
+const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
+  "Order Placed": ["Packed"],
+  "Packed": ["Shipped"],
+  "Shipped": ["Out for Delivery"],
+  "Out for Delivery": ["Delivered"],
+  "Delivered": []
+};
 
 export async function PATCH(
   request: Request,
@@ -58,6 +67,26 @@ export async function PATCH(
 
   if (!existingOrder) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  if (existingOrder.status !== payload.status) {
+    const nextStatuses = allowedTransitions[existingOrder.status as OrderStatus] ?? [];
+    if (!nextStatuses.includes(payload.status)) {
+      await logSecurityEvent({
+        event_type: "admin_invalid_order_transition",
+        user_id: user.id,
+        request,
+        details: {
+          order_id: id,
+          from_status: existingOrder.status,
+          attempted_status: payload.status
+        }
+      });
+      return NextResponse.json(
+        { error: `Invalid status transition from ${existingOrder.status} to ${payload.status}.` },
+        { status: 400 }
+      );
+    }
   }
 
   const { error } = await supabase

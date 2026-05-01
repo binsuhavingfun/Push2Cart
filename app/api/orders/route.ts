@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { logSecurityEvent } from "@/lib/security-events";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { CartItem } from "@/lib/types";
 import { normalizeLongText, normalizeShortText, isUuid } from "@/lib/validation";
@@ -94,6 +95,12 @@ export async function POST(request: Request) {
   }
 
   if (normalizedItems.length > MAX_UNIQUE_ITEMS) {
+    await logSecurityEvent({
+      event_type: "checkout_unique_item_limit",
+      user_id: user.id,
+      request,
+      details: { unique_items: normalizedItems.length }
+    });
     return NextResponse.json(
       { error: "Orders are limited to 20 unique products per checkout." },
       { status: 400 }
@@ -101,6 +108,12 @@ export async function POST(request: Request) {
   }
 
   if (normalizedItems.some((item) => item.quantity > MAX_QUANTITY_PER_ITEM)) {
+    await logSecurityEvent({
+      event_type: "checkout_item_quantity_limit",
+      user_id: user.id,
+      request,
+      details: { items: normalizedItems }
+    });
     return NextResponse.json(
       { error: "A single product cannot exceed 10 units in one checkout." },
       { status: 400 }
@@ -110,6 +123,12 @@ export async function POST(request: Request) {
   const totalUnits = normalizedItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (totalUnits > MAX_TOTAL_UNITS) {
+    await logSecurityEvent({
+      event_type: "checkout_total_unit_limit",
+      user_id: user.id,
+      request,
+      details: { total_units: totalUnits }
+    });
     return NextResponse.json(
       { error: "Orders are limited to 50 total units per checkout." },
       { status: 400 }
@@ -153,6 +172,12 @@ export async function POST(request: Request) {
   const requestItems = [...normalizedItems].sort((a, b) => a.product_id.localeCompare(b.product_id));
 
   if (JSON.stringify(serverCartItems) !== JSON.stringify(requestItems)) {
+    await logSecurityEvent({
+      event_type: "checkout_cart_mismatch",
+      user_id: user.id,
+      request,
+      details: { request_items: requestItems, server_cart_items: serverCartItems }
+    });
     return NextResponse.json(
       { error: "Your cart changed before checkout. Please refresh and try again." },
       { status: 409 }
@@ -171,6 +196,12 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (recentOrder) {
+    await logSecurityEvent({
+      event_type: "checkout_duplicate_submission",
+      user_id: user.id,
+      request,
+      details: { address: builtAddress, previous_order_id: recentOrder.id }
+    });
     return NextResponse.json(
       { error: "A similar order was placed recently. Please wait a moment before trying again." },
       { status: 409 }

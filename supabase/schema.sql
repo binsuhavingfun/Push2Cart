@@ -146,6 +146,16 @@ create table if not exists public.api_rate_limits (
   unique (scope, identifier, window_start)
 );
 
+create table if not exists public.security_events (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null,
+  severity text not null default 'warning' check (severity in ('info', 'warning')),
+  user_id uuid references auth.users(id) on delete set null,
+  request_identifier text,
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 alter table public.reports add column if not exists user_id uuid references auth.users(id) on delete set null;
 alter table public.reports add column if not exists name text;
 alter table public.reports add column if not exists email text;
@@ -164,6 +174,7 @@ alter table public.reviews enable row level security;
 alter table public.admin_users enable row level security;
 alter table public.reports enable row level security;
 alter table public.api_rate_limits enable row level security;
+alter table public.security_events enable row level security;
 
 drop policy if exists "Public products are viewable by everyone" on public.products;
 drop policy if exists "Users manage their own cart items" on public.cart_items;
@@ -184,6 +195,7 @@ drop policy if exists "Anyone can submit reports" on public.reports;
 drop policy if exists "Admins can read reports" on public.reports;
 drop policy if exists "Admins can view all orders" on public.orders;
 drop policy if exists "Admins can view all order items" on public.order_items;
+drop policy if exists "Admins can read security events" on public.security_events;
 
 create policy "Public products are viewable by everyone"
 on public.products
@@ -319,6 +331,18 @@ with check (true);
 
 create policy "Admins can read reports"
 on public.reports
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+create policy "Admins can read security events"
+on public.security_events
 for select
 to authenticated
 using (
