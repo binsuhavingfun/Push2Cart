@@ -5,11 +5,20 @@ import { requireAdmin } from "@/lib/admin";
 export default async function AdminDashboardPage() {
   const { supabase } = await requireAdmin("/admin");
 
-  const [{ count: totalOrders }, { count: activeOrders }, { count: reportCount }, { data: recentOrders }] =
+  const [
+    { count: totalOrders },
+    { count: activeOrders },
+    { count: reportCount },
+    { count: productCount },
+    { count: reviewCount },
+    { data: recentOrders }
+  ] =
     await Promise.all([
       supabase.from("orders").select("*", { count: "exact", head: true }),
       supabase.from("orders").select("*", { count: "exact", head: true }).in("status", ["Pending", "Confirmed", "Preparing", "Shipped", "Out for Delivery"]),
       supabase.from("reports").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*", { count: "exact", head: true }),
+      supabase.from("reviews").select("*", { count: "exact", head: true }),
       supabase
         .from("orders")
         .select("id, full_name, status, created_at")
@@ -25,11 +34,13 @@ export default async function AdminDashboardPage() {
         description="Orders, reports, and store activity."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
         {[
           { label: "Total Orders", value: String(totalOrders ?? 0) },
           { label: "Active Fulfillment", value: String(activeOrders ?? 0) },
-          { label: "Reports Inbox", value: String(reportCount ?? 0) }
+          { label: "Reports Inbox", value: String(reportCount ?? 0) },
+          { label: "Products", value: String(productCount ?? 0) },
+          { label: "Reviews", value: String(reviewCount ?? 0) }
         ].map((item) => (
           <div key={item.label} className="pixel-border pixel-panel p-5">
             <p className="pixel-heading text-[10px] text-white">{item.label}</p>
@@ -70,9 +81,17 @@ export default async function AdminDashboardPage() {
             <p className="pixel-heading text-xs text-white">Orders Management</p>
             <p className="mt-3 text-sm text-white/70">View and update orders.</p>
           </Link>
+          <Link href="/admin/products" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
+            <p className="pixel-heading text-xs text-white">Products Management</p>
+            <p className="mt-3 text-sm text-white/70">Add and update products.</p>
+          </Link>
           <Link href="/admin/reports" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
             <p className="pixel-heading text-xs text-white">Reports Management</p>
             <p className="mt-3 text-sm text-white/70">Review user reports and feedback.</p>
+          </Link>
+          <Link href="/admin/reviews" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
+            <p className="pixel-heading text-xs text-white">Review Moderation</p>
+            <p className="mt-3 text-sm text-white/70">Review and manage feedback.</p>
           </Link>
           <Link href="/admin/profile" className="pixel-border pixel-panel block p-5 transition-colors hover:text-accent">
             <p className="pixel-heading text-xs text-white">Admin Profile</p>

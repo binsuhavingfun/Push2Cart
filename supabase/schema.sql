@@ -182,6 +182,9 @@ alter table public.api_rate_limits enable row level security;
 alter table public.security_events enable row level security;
 
 drop policy if exists "Public products are viewable by everyone" on public.products;
+drop policy if exists "Admins create products" on public.products;
+drop policy if exists "Admins update products" on public.products;
+drop policy if exists "Admins delete products" on public.products;
 drop policy if exists "Users manage their own cart items" on public.cart_items;
 drop policy if exists "Users view their own orders" on public.orders;
 drop policy if exists "Users create their own orders" on public.orders;
@@ -195,6 +198,7 @@ drop policy if exists "Users manage their own vouchers" on public.vouchers;
 drop policy if exists "Users manage their own game plays" on public.game_plays;
 drop policy if exists "Anyone can view reviews" on public.reviews;
 drop policy if exists "Authenticated users create reviews" on public.reviews;
+drop policy if exists "Admins delete reviews" on public.reviews;
 drop policy if exists "Users read own admin row" on public.admin_users;
 drop policy if exists "Anyone can submit reports" on public.reports;
 drop policy if exists "Admins can read reports" on public.reports;
@@ -207,6 +211,49 @@ on public.products
 for select
 to public
 using (true);
+
+create policy "Admins create products"
+on public.products
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+create policy "Admins update products"
+on public.products
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
+
+create policy "Admins delete products"
+on public.products
+for delete
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
 
 create policy "Users manage their own cart items"
 on public.cart_items
@@ -321,6 +368,18 @@ on public.reviews
 for insert
 to authenticated
 with check (auth.uid() = user_id);
+
+create policy "Admins delete reviews"
+on public.reviews
+for delete
+to authenticated
+using (
+  exists (
+    select 1
+    from public.admin_users
+    where admin_users.user_id = auth.uid()
+  )
+);
 
 create policy "Users read own admin row"
 on public.admin_users
