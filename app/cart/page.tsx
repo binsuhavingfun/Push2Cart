@@ -13,7 +13,7 @@ export default async function CartPage() {
       <SectionHeading
         eyebrow="Cart"
         title="Build Your Loadout"
-        description="Guest carts stay local, signed-in carts sync with Supabase, and every add-to-cart gets a quick toast ping."
+        description="Review your picks, update quantities, and head to checkout when you're ready."
       />
       <CartView />
     </div>

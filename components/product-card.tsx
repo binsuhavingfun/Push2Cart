@@ -8,7 +8,7 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 
 export function ProductCard({ product }: { product: Product }) {
   return (
-    <article className="pixel-panel pixel-border group overflow-hidden p-4">
+    <article className="pixel-panel pixel-border group flex h-full flex-col overflow-hidden p-4">
       <Link
         href={`/products/${product.id}`}
         className="relative block aspect-[4/3] overflow-hidden border border-white/10 bg-background/50"
@@ -20,8 +20,8 @@ export function ProductCard({ product }: { product: Product }) {
           className="object-cover transition duration-300 group-hover:scale-105"
         />
       </Link>
-      <div className="mt-4 space-y-3">
-        <div>
+      <div className="mt-4 flex flex-1 flex-col gap-3">
+        <div className="flex-1">
           <Link href={`/products/${product.id}`} className="pixel-heading text-sm text-white">
             {product.name}
           </Link>
@@ -31,7 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
             {(product.average_rating ?? 0).toFixed(1)} ({product.review_count ?? 0})
           </p>
         </div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="mt-auto flex items-center justify-between gap-3">
           <span className="text-lg font-semibold text-accent">
             {formatCurrency(product.price)}
           </span>
