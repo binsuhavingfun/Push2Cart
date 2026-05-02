@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allowedOrderStatuses,
+  canCustomerCancelOrder,
   canTransitionOrderStatus,
   isAllowedOrderStatus
 } from "@/lib/order-status";
@@ -28,5 +29,15 @@ describe("order status rules", () => {
     expect(canTransitionOrderStatus("Preparing", "Shipped")).toBe(true);
     expect(canTransitionOrderStatus("Shipped", "Delivered")).toBe(false);
     expect(canTransitionOrderStatus("Delivered", "Cancelled")).toBe(false);
+  });
+
+  it("lets customers cancel only before shipment", () => {
+    expect(canCustomerCancelOrder("Pending")).toBe(true);
+    expect(canCustomerCancelOrder("Confirmed")).toBe(true);
+    expect(canCustomerCancelOrder("Preparing")).toBe(true);
+    expect(canCustomerCancelOrder("Shipped")).toBe(false);
+    expect(canCustomerCancelOrder("Out for Delivery")).toBe(false);
+    expect(canCustomerCancelOrder("Delivered")).toBe(false);
+    expect(canCustomerCancelOrder("Cancelled")).toBe(false);
   });
 });

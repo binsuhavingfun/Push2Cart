@@ -31,3 +31,7 @@ export function canTransitionOrderStatus(current: OrderStatus, next: OrderStatus
 
   return (allowedOrderTransitions[current] ?? []).includes(next);
 }
+
+export function canCustomerCancelOrder(status: OrderStatus) {
+  return status === "Pending" || status === "Confirmed" || status === "Preparing";
+}

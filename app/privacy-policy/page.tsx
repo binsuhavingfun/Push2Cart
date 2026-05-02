@@ -6,7 +6,6 @@ export default function PrivacyPolicyPage() {
       <SectionHeading
         eyebrow="Privacy"
         title="Privacy Policy"
-        description="Review the basic privacy details for Push2Cart."
       />
 
       <div className="pixel-border pixel-panel space-y-4 p-6 text-sm leading-7 text-white/75">

@@ -24,7 +24,7 @@ export function Footer() {
         </nav>
 
         <div className="space-y-2 text-center text-[11px] text-white/45 sm:text-xs">
-          <p>&copy; 2026 Push2Cart. Built for a gamified shopping experience.</p>
+          <p>&copy; 2026 Push2Cart.</p>
           <p>Push2Cart is a student project and is not affiliated with any third-party brands shown in sample content.</p>
         </div>
       </div>

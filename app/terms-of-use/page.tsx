@@ -6,7 +6,6 @@ export default function TermsOfUsePage() {
       <SectionHeading
         eyebrow="Terms"
         title="Terms of Use"
-        description="Review the basic terms for using Push2Cart."
       />
 
       <div className="pixel-border pixel-panel space-y-4 p-6 text-sm leading-7 text-white/75">

@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { CancelOrderButton } from "@/components/cancel-order-button";
 import { OrderStatusTimeline } from "@/components/order-status-timeline";
 import { requireCustomerUser } from "@/lib/admin";
 import { formatCurrency } from "@/lib/format";
+import { canCustomerCancelOrder } from "@/lib/order-status";
 import type { Order, Product } from "@/lib/types";
 import { getDeliveryEstimate } from "@/lib/shipping";
 
@@ -65,6 +67,13 @@ export default async function OrderDetailPage({
         ) : null}
         {typedOrder.delivery_notes ? (
           <p className="mt-2 text-sm text-white/65">Delivery notes: {typedOrder.delivery_notes}</p>
+        ) : null}
+        {canCustomerCancelOrder(typedOrder.status) ? (
+          <CancelOrderButton orderId={typedOrder.id} />
+        ) : typedOrder.status !== "Cancelled" ? (
+          <p className="mt-5 text-sm text-white/65">
+            Orders can only be cancelled before they are shipped.
+          </p>
         ) : null}
       </div>
       <OrderStatusTimeline status={typedOrder.status} region={region} />

@@ -47,7 +47,7 @@ export function AuthForms() {
   };
 
   return (
-    <div className="pixel-border pixel-panel max-w-xl p-6 sm:p-8">
+    <div className="pixel-border pixel-panel mx-auto w-full max-w-xl p-6 sm:p-8">
       <div className="flex gap-3 text-xs pixel-button">
         <button
           type="button"

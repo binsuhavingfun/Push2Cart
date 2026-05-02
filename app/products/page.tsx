@@ -10,7 +10,6 @@ export default async function ProductsPage() {
       <SectionHeading
         eyebrow="Storefront"
         title="Arcade Shelf"
-        description="Browse the full Push2Cart catalog with pixel-framed product cards and quick add-to-cart actions."
       />
       <ProductGrid products={products} />
     </div>

@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/section-heading";
 export default function AuthPage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8">
-      <div className="space-y-8 text-center">
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center space-y-8 text-center">
         <SectionHeading
           eyebrow="Account"
           title="Login Or Create Your Save Slot"
