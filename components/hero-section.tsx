@@ -36,7 +36,7 @@ export function HeroSection() {
               <div className="grid gap-3">
                 {[
                   "Daily claw machine with voucher rewards",
-                  "Guest cart that upgrades when you log in",
+                  "Keep your cart when you log in",
                   "Tracked deliveries from placed to delivered"
                 ].map((item) => (
                   <div key={item} className="border border-white/10 bg-background/60 px-4 py-4">

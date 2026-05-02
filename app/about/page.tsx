@@ -2,7 +2,7 @@ import { SectionHeading } from "@/components/section-heading";
 
 function LaptopIllustration() {
   return (
-    <div className="pixel-border pixel-panel relative mx-auto flex w-full max-w-md items-center justify-center overflow-hidden p-6 sm:p-8">
+    <div className="pixel-border pixel-panel relative mx-auto flex w-full max-w-md items-center justify-center overflow-hidden px-6 py-8 sm:px-8 sm:py-9">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--secondary)/0.18),_transparent_34%),radial-gradient(circle_at_bottom,_hsl(var(--primary)/0.16),_transparent_38%)]" />
 
       <div className="relative flex w-full max-w-xs flex-col items-center">
@@ -13,21 +13,18 @@ function LaptopIllustration() {
             <span className="h-2.5 w-2.5 bg-secondary" />
           </div>
 
-          <div className="mt-5 space-y-3 rounded-none border-2 border-primary/60 bg-[linear-gradient(180deg,_hsl(240_20%_10%),_hsl(240_20%_14%))] p-4">
-            <div className="font-pixel text-[10px] leading-5 text-secondary sm:text-xs">
-              <p>&lt;html&gt;</p>
-              <p className="pl-3 text-accent">cart.push(fun);</p>
-              <p className="pl-3 text-primary">save += reward;</p>
-              <p>&lt;/html&gt;</p>
-            </div>
-
-            <div className="flex justify-center gap-5 pt-2">
-              <span className="h-2.5 w-2.5 bg-accent" />
-              <span className="h-2.5 w-2.5 bg-accent" />
-            </div>
-
-            <div className="flex justify-center pt-1">
-              <div className="h-3 w-10 rounded-b-full border-b-[3px] border-secondary" />
+          <div className="mt-5 rounded-none border-2 border-primary/60 bg-[linear-gradient(180deg,_hsl(240_20%_10%),_hsl(240_20%_14%))] p-4">
+            <div className="space-y-1 font-mono text-[11px] leading-5 text-secondary sm:text-xs">
+              <p>
+                <span className="text-primary">cart</span>
+                <span className="text-white/75">.</span>
+                <span className="text-accent">add</span>
+                <span className="text-white/75">(item);</span>
+              </p>
+              <p>
+                <span className="text-accent">saveReward</span>
+                <span className="text-white/75">();</span>
+              </p>
             </div>
           </div>
         </div>
@@ -41,7 +38,7 @@ function LaptopIllustration() {
 
 export default function AboutPage() {
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
       <div className="space-y-6">
         <SectionHeading
           eyebrow="About"
@@ -67,25 +64,9 @@ export default function AboutPage() {
             Next.js App Router, TypeScript, Tailwind CSS v4, and Supabase.
           </p>
         </div>
-
-        <div className="pixel-border pixel-panel p-5">
-          <p className="pixel-heading text-xs text-white">Creator Contact</p>
-          <div className="mt-4 space-y-2 text-sm text-white/75">
-            <p>Email: vincetarogpaglicawan@gmail.com</p>
-            <a
-              href="https://github.com/binsuhavingfun"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block transition-colors hover:text-white"
-            >
-              GitHub: https://github.com/binsuhavingfun
-            </a>
-            <p>Support hours: Open daily, 9:00 AM - 6:00 PM (Philippine Time, GMT+8)</p>
-          </div>
-        </div>
       </div>
 
-      <div className="lg:pt-5">
+      <div className="flex items-center justify-center lg:self-center">
         <LaptopIllustration />
       </div>
     </div>

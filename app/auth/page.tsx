@@ -4,15 +4,17 @@ import { SectionHeading } from "@/components/section-heading";
 
 export default function AuthPage() {
   return (
-    <div className="space-y-8">
-      <SectionHeading
-        eyebrow="Account"
-        title="Login Or Create Your Save Slot"
-        description="Use email and password auth with Supabase, then pick up your synced cart, checkout flow, and mini-game rewards."
-      />
-      <Suspense fallback={null}>
-        <AuthForms />
-      </Suspense>
+    <div className="mx-auto w-full max-w-3xl space-y-8">
+      <div className="space-y-8 text-center">
+        <SectionHeading
+          eyebrow="Account"
+          title="Login Or Create Your Save Slot"
+          description="Sign in to save your cart, checkout faster, and keep your rewards."
+        />
+        <Suspense fallback={null}>
+          <AuthForms />
+        </Suspense>
+      </div>
     </div>
   );
 }

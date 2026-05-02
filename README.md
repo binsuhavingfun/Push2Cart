@@ -4,8 +4,6 @@ Push2Cart is a retro pixel-art e-commerce app built with Next.js App Router, Typ
 
 Motto: `Play. Shop. Save.`
 
-Subtext: `Your cart just got more fun.`
-
 ## Platform Overview
 
 Push2Cart is a gamified shopping website with a retro arcade style. Users can browse products, play the claw machine, earn vouchers, and track their orders in one place.
@@ -104,6 +102,7 @@ npm run dev
 - `npm run dev`: start local development server.
 - `npm run build`: create production build (recommended before deploy).
 - `npm start`: run production server after build (if configured in your project).
+- `npm run test`: run the automated test suite for shipping validation, role restrictions, and admin order status rules.
 - `npm run lint`: run lint checks (if configured in your project).
 
 ## Supabase Setup Guide
@@ -282,8 +281,90 @@ git push origin main
 - Keep these in Vercel Environment Variables:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SENTRY_DSN`
+  - `SENTRY_DSN`
 - Do not expose service keys in `NEXT_PUBLIC_*` variables.
 - If env values are changed in Vercel, redeploy before retesting.
+
+## Production Monitoring
+
+Push2Cart now includes Sentry wiring for production error monitoring in:
+- [instrumentation.ts](C:/Users/vinci/Documents/Push2Cart/instrumentation.ts)
+- [instrumentation-client.ts](C:/Users/vinci/Documents/Push2Cart/instrumentation-client.ts)
+- [sentry.server.config.ts](C:/Users/vinci/Documents/Push2Cart/sentry.server.config.ts)
+- [sentry.edge.config.ts](C:/Users/vinci/Documents/Push2Cart/sentry.edge.config.ts)
+- [app/global-error.tsx](C:/Users/vinci/Documents/Push2Cart/app/global-error.tsx)
+
+To enable it:
+
+1. Create a Sentry project for the Next.js app.
+2. Add these environment variables locally and in Vercel:
+   - `NEXT_PUBLIC_SENTRY_DSN`
+   - `SENTRY_DSN`
+3. Redeploy the app after the variables are set.
+4. Trigger a controlled test error and confirm the event appears in Sentry before treating monitoring as active.
+
+Notes:
+- The SDK stays disabled when no DSN is provided.
+- Client, server, edge, and App Router global errors are all wired to report through Sentry.
+- Tracing is enabled with a conservative sample rate in production and a full sample rate in development.
+
+## Safe Deployment and Rollback Process
+
+Use this flow for important production updates, especially when app code and Supabase schema must stay in sync.
+
+### Before deployment
+
+1. Work from a clean branch and review the exact code and SQL being shipped.
+2. Run local verification:
+   - `npm run typecheck`
+   - `npm run test`
+   - `npm run build`
+3. Keep a copy of the current production-ready SQL before applying a new schema change.
+4. If a schema change is destructive or risky, create a backup/export of important live data first.
+5. Prepare rollback SQL before deployment whenever a schema update changes columns, constraints, policies, or functions.
+
+### Vercel deployment steps
+
+1. Push the approved branch to GitHub.
+2. Confirm the required Vercel environment variables are already set.
+3. Deploy the code update to Vercel.
+4. After the deployment is `Ready`, verify the main flows:
+   - guest browsing and guest cart
+   - customer login and checkout
+   - customer orders and vouchers
+   - admin dashboard, orders, and reports
+5. Check browser console output and server/runtime logs for obvious errors.
+
+### Supabase schema deployment steps
+
+1. Review the exact SQL diff in [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+2. Apply schema changes carefully in Supabase SQL Editor.
+3. If the schema and frontend depend on each other, finish the Vercel deployment and then re-test the affected flows immediately.
+4. Confirm new tables, columns, functions, and policies behave as expected before treating the release as complete.
+
+### Rollback process
+
+If the problem is app-code only:
+
+1. Re-deploy the previous stable Vercel version.
+2. Re-check the main guest, customer, and admin flows.
+
+If the problem involves schema or data:
+
+1. Stop applying more changes until the issue is understood.
+2. Run the prepared rollback SQL for the affected schema update.
+3. Restore backed-up data if the issue caused destructive data changes.
+4. Re-deploy the last stable Vercel version if the frontend and backend must match.
+5. Re-test checkout, orders, admin tools, and any route touched by the failed schema change.
+
+### Release sign-off
+
+Only treat a release as complete when:
+- Vercel is serving the intended version
+- Supabase has the intended schema
+- local checks passed (`typecheck`, `test`, `build`)
+- guest, customer, and admin verification passed after deployment
 
 ## Shipping Address Validation System
 
@@ -648,33 +729,34 @@ Why:
 - `check_rate_limit(...)` for shared API protection
 - `create_order_with_items(...)` for atomic order creation and stock deduction
 
-## Production Readiness Checklist
+## Current Project Status
 
-Push2Cart is now in a strong demo and MVP state, but public production use still needs a few business and operations layers before it should be treated as a live storefront.
+Push2Cart is documented as a polished student-project MVP with the core storefront, account, admin, support, and deployment flows already implemented for the current version.
 
-### High priority before public launch
+### Current version checks
 
-- Remove or limit product fallback to local mock data in production so live product reads never silently mask database problems.
-- Verify the live Vercel deployment end to end with guest, customer, and admin accounts after every important Supabase schema update.
-- Add automated tests for checkout, role restrictions, admin order updates, and key customer flows.
-- Add production error monitoring and alerting so failed checkouts, broken routes, and server errors are visible quickly.
-- Document a safe deployment and rollback process for Vercel and Supabase schema changes.
+- Local verification is in place through `npm run typecheck`, `npm run test`, and `npm run build`.
+- Guest, customer, and admin flows are implemented in the current codebase and can be re-verified after important Supabase schema updates.
+- The latest Supabase schema changes are documented in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+- Safe deployment and rollback steps for Vercel and Supabase schema changes are documented in this README.
+- Sentry monitoring support is wired into the project and can be enabled with the documented DSN environment variables.
+- The current product fallback behavior is intentional for the student-project setup and supports the demo experience when Supabase product reads are unavailable.
 
-### Important next improvements
+### Possible Future Improvements
 
-- Decide whether Cash on Delivery is enough or whether the project needs a real online payment provider with webhook verification.
-- Add stronger fraud and abuse controls if traffic grows, such as CAPTCHA or Turnstile on abuse-prone public actions.
-- Add clearer store policies for shipping, returns, refunds, privacy, and support expectations.
-- Add a more complete admin operations layer if the site will handle real products, including product and inventory management.
-- Add regular backup and recovery habits for important production data.
+- If Push2Cart later needs online payments, decide whether Cash on Delivery is enough or if a payment provider with webhook verification is needed.
+- If traffic grows, add stronger fraud and abuse controls such as CAPTCHA or Turnstile on abuse-prone public actions.
+- If Push2Cart is presented as a real store, add clearer policies for shipping, returns, refunds, privacy, and support expectations.
+- If Push2Cart later supports real products, add admin tools for product and inventory management.
+- If Push2Cart stores important live data, set up regular backup and recovery steps.
 
-### Final production checks
+### Current release checks
 
-- Confirm all required environment variables are set correctly in Vercel.
-- Confirm all required Supabase SQL changes from [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) are applied to the live database.
-- Test mobile and desktop flows for guest, customer, and admin accounts.
-- Confirm there are no obvious browser console errors on important pages such as Home, Products, Cart, Checkout, Profile, Orders, Admin Orders, and the Mini Game.
-- Confirm the footer, navbar, profile flows, report page, and admin dashboard all reflect the current implemented routes and role rules.
+- The required environment variables for the current version are documented for local and Vercel setup.
+- The required Supabase SQL changes for the current version are documented in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
+- The current mobile and desktop flows are covered by the implemented route structure and local verification steps.
+- The key user-facing areas such as Home, Products, Cart, Checkout, Profile, Orders, Admin Orders, and the Mini Game are part of the current project verification flow.
+- The footer, navbar, profile flows, report page, auth pages, and admin dashboard reflect the current implemented routes and role rules.
 
 
 

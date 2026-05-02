@@ -1,28 +1,12 @@
 import { NextResponse } from "next/server";
 import { logSecurityEvent } from "@/lib/security-events";
+import {
+  allowedOrderStatuses,
+  canTransitionOrderStatus
+} from "@/lib/order-status";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { OrderStatus } from "@/lib/types";
 import { isUuid } from "@/lib/validation";
-
-const allowedStatuses: OrderStatus[] = [
-  "Pending",
-  "Confirmed",
-  "Preparing",
-  "Shipped",
-  "Out for Delivery",
-  "Delivered",
-  "Cancelled"
-];
-
-const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
-  "Pending": ["Confirmed", "Cancelled"],
-  "Confirmed": ["Preparing", "Cancelled"],
-  "Preparing": ["Shipped", "Cancelled"],
-  "Shipped": ["Out for Delivery"],
-  "Out for Delivery": ["Delivered"],
-  "Delivered": [],
-  "Cancelled": []
-};
 
 export async function PATCH(
   request: Request,
@@ -59,7 +43,7 @@ export async function PATCH(
 
   const payload = (await request.json()) as { status?: OrderStatus };
 
-  if (!payload.status || !allowedStatuses.includes(payload.status)) {
+  if (!payload.status || !allowedOrderStatuses.includes(payload.status)) {
     return NextResponse.json({ error: "Invalid status value." }, { status: 400 });
   }
 
@@ -74,8 +58,7 @@ export async function PATCH(
   }
 
   if (existingOrder.status !== payload.status) {
-    const nextStatuses = allowedTransitions[existingOrder.status as OrderStatus] ?? [];
-    if (!nextStatuses.includes(payload.status)) {
+    if (!canTransitionOrderStatus(existingOrder.status as OrderStatus, payload.status)) {
       await logSecurityEvent({
         event_type: "admin_invalid_order_transition",
         user_id: user.id,

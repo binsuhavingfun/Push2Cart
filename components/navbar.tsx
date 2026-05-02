@@ -12,9 +12,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 const guestLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Products" },
-  { href: "/game", label: "Mini Game" },
-  { href: "/about", label: "About" },
-  { href: "/report", label: "Report" }
+  { href: "/game", label: "Mini Game" }
 ];
 
 const customerLinks = [

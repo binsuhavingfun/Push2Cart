@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 type Product = {
   id: string;
@@ -7,6 +7,21 @@ type Product = {
 };
 
 export default async function SupabaseExamplePage() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-10">
+        <h1 className="text-2xl font-bold">Supabase Products</h1>
+        <p className="border border-white/10 bg-white/5 p-4 text-white/70">
+          Add your Supabase environment variables to enable this example page.
+        </p>
+      </main>
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const { data: products, error } = await supabase
     .from("products")
     .select("id, name, price")
