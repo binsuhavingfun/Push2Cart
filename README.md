@@ -18,7 +18,7 @@ The current homepage featured section uses:
 - TypeScript
 - Tailwind CSS v4
 - Supabase Auth and Database
-- Sentry
+- Sentry (`@sentry/nextjs`)
 - Vercel
 
 ## Current Features
@@ -257,6 +257,9 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_DSN=
+SENTRY_AUTH_TOKEN=
+SENTRY_ORG=
+SENTRY_PROJECT=
 ```
 
 ### Additional variables used by the report email flow
@@ -273,6 +276,9 @@ Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` is required for the secure checkout RPC path and the privacy cleanup script.
 - `REPORT_RECEIVER_EMAIL` is required if you want the public report form to work.
 - `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` are optional unless you want Sentry enabled.
+- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are optional and are only needed if you want Sentry release/source-map upload during builds.
+- To activate Sentry in both the browser and server runtimes, set both `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to your project DSN in local and Vercel environment variables.
+- `.env.local` is gitignored, so real DSN values should stay out of GitHub.
 
 ## Available Scripts
 
@@ -333,7 +339,12 @@ Sentry files currently wired in this repo:
 - [`sentry.edge.config.ts`](C:\Users\vinci\Documents\Push2Cart\sentry.edge.config.ts)
 - [`app/global-error.tsx`](C:\Users\vinci\Documents\Push2Cart\app\global-error.tsx)
 
-Sentry stays disabled unless a DSN is provided.
+Current setup:
+- `@sentry/nextjs` is installed in `package.json`.
+- Client, server, edge, request-error, and global-error entry points are wired.
+- Sentry stays disabled unless a DSN is provided.
+- The app still runs normally in local development and production builds when Sentry env vars are empty.
+- When DSN values are present, Sentry initializes through environment variables only. No DSN is hardcoded in the source.
 
 ## Verification
 
