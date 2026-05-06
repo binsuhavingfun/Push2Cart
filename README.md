@@ -1,77 +1,212 @@
-﻿# Push2Cart
+# Push2Cart
 
-Push2Cart is a retro pixel-art e-commerce app built with Next.js App Router, TypeScript, Tailwind CSS v4, and Supabase.
+Push2Cart is a retro pixel-art e-commerce student project built with Next.js App Router, TypeScript, Tailwind CSS v4, and Supabase.
 
 Motto: `Play. Shop. Save.`
 
-## Platform Overview
+## Overview
 
-Push2Cart is a gamified shopping website with a retro arcade style. Users can browse products, play the claw machine, earn vouchers, and track their orders in one place.
+Push2Cart mixes a simple storefront flow with a claw-machine reward loop. Guests can browse products and build a cart, customers can place demo orders and earn vouchers, and admins can manage products, orders, reviews, and reports.
 
-## Homepage Featured Description
+The current homepage featured section uses:
 
-Shop featured picks. Keep it simple.
+> Shop featured picks.
 
-## Features
+## Tech Stack
 
-- Homepage hero with pixel-art branding and dual CTAs
-- Responsive single-row desktop navbar with visible `Play. Shop. Save.` tagline and a hamburger menu on small screens
-- Responsive product grid and dedicated product detail pages
-- Guest cart via `localStorage` with automatic merge into logged-in Supabase cart
-- Supabase email/password authentication
-- Protected checkout with Cash on Delivery order creation and voucher redemption
-- Customer profile page with account details, order history, purchase history, vouchers, settings, and in-page logout
-- Order history and order tracking timeline
-- Daily claw machine mini-game with automatic left-right claw movement, timed drop play, and generated sound effects
-- Product review system with 1-5 star ratings and comments
-- Admin dashboard, admin orders view, and admin reports management pages
-- Footer with role-based Explore links and creator contact details
-- About and Report pages with built-in pixel illustrations
-- Supabase-ready RLS policies for products, carts, orders, vouchers, and game plays
+- Next.js App Router
+- TypeScript
+- Tailwind CSS v4
+- Supabase Auth and Database
+- Sentry
+- Vercel
 
-## Implemented UI and Routes
+## Current Features
 
-- Navbar:
-  - Guest: `Home`, `Products`, `Mini Game`, `About`, `Report`, `Login`
-  - Customer: `Home`, `Products`, `Mini Game`, `Cart`, `Profile`
-  - Admin: `Dashboard`, `Orders`, `Reports`, `Profile`, `Logout`
-- Footer:
-  - Push2Cart branding
-  - `Play. Shop. Save.` tagline
-  - `Explore` links for guests and customers: `Products`, `Mini Game`, `About`, `Report`
-  - Customer footer also includes `Profile`
-  - Admin footer is simplified and does not repeat admin navigation links
-  - Creator contact details: email, GitHub, support hours
-- Customer profile route: `/account`
-  - `My Account`
-  - `My Orders`
-  - `Purchase History`
-  - `Vouchers`
-  - `Settings`
-  - `Logout`
-- Customer order routes:
-  - `/orders`
-  - `/orders/[id]`
-- Admin routes:
-  - `/admin`
-  - `/admin/orders`
-  - `/admin/orders/[id]`
-  - `/admin/reports`
-- Support route:
-  - `/report`
-- Authentication routes:
-  - `/auth`
-  - `/auth/forgot-password`
-  - `/auth/reset-password`
+- Homepage hero plus featured products section
+- Responsive navbar with the `Play. Shop. Save.` tagline
+- Guest cart with local storage and cart sync after login
+- Email/password auth with forgot-password and reset-password flow
+- Product listing and product detail pages
+- Product reviews with 1 to 5 star ratings and comments
+- Checkout with Cash on Delivery, shipping validation, and voucher redemption
+- Customer account page with profile overview, orders, purchase history, vouchers, and account support
+- Order list and order detail pages with status timeline
+- Customer order cancellation before shipment
+- Daily claw machine mini-game with 2 plays per account per day
+- Voucher rewards saved to the customer account
+- Admin dashboard, order management, product management, review moderation, reports, and admin profile
+- Public report form that sends email through Resend and stores reports in Supabase
+- Supabase RLS policies plus server-side rate limiting, security-event logging, and role protections for orders, reports, vouchers, game plays, and admin-only data
+- Optional Sentry wiring for client, server, edge, and global app errors
+
+## Routes and Navigation
+
+### Storefront Navbar
+
+- Guest: core store links plus `Cart`, with `Login` as the far-right account action
+- Customer: core store links plus `Cart`, with `Profile` as the far-right account action
+- Admin: admin-focused navigation with `Dashboard`, `Orders`, `Reports`, `Profile`, and `Logout`
+
+Notes:
+- `Cart` is visible in the desktop and mobile navbar for both guests and customers.
+- Admin product and review pages exist, but they are reached from admin pages rather than the top navbar.
+
+### Footer
+
+- Brand: `PUSH2CART`
+- Links: `About`, `Report`, `Contact`, `Privacy Policy`, `Terms of Use`
+- Footer note: Push2Cart is a student project and not affiliated with third-party brands shown in sample content.
+
+### Main App Routes
+
+- `/`
+- `/products`
+- `/products/[id]`
+- `/cart`
+- `/checkout`
+- `/game`
+- `/auth`
+- `/auth/forgot-password`
+- `/auth/reset-password`
+- `/auth/callback`
+- `/account`
+- `/orders`
+- `/orders/[id]`
+- `/about`
+- `/contact`
+- `/report`
+- `/privacy-policy`
+- `/terms-of-use`
+
+### Admin Routes
+
+- `/admin`
+- `/admin/orders`
+- `/admin/orders/[id]`
+- `/admin/products`
+- `/admin/products/new`
+- `/admin/products/[id]`
+- `/admin/reports`
+- `/admin/reviews`
+- `/admin/profile`
+
+## Current User Flows
+
+### Guest
+
+- Browse products and product details
+- Use a guest cart
+- Log in when checkout or the mini-game requires an account
+
+### Customer
+
+- Sign up or log in through `/auth`
+- Add products to cart and check out with Cash on Delivery
+- Enter structured shipping details:
+  - `full_name`
+  - `phone_number`
+  - `street_address`
+  - `barangay`
+  - `city`
+  - `province`
+  - `postal_code`
+  - optional `delivery_notes`
+- Use the customer cancel action only before an order reaches shipment
+- Use available vouchers during checkout
+- Track orders from `/orders` and `/orders/[id]`
+- View account information, purchase history, vouchers, and account support on `/account`
+- Play the claw machine and receive account-bound vouchers
+
+### Admin
+
+- Access the dashboard at `/admin`
+- View and update order statuses
+- Open a dedicated admin order detail page with customer, delivery, payment, item, and activity information
+- Add and edit products
+- Review incoming reports and feedback
+- Moderate product reviews
+
+## Auth and Password Recovery
+
+- Auth page: `/auth`
+- Forgot-password page: `/auth/forgot-password`
+- Reset callback route: `/auth/callback`
+- Reset page: `/auth/reset-password`
+
+The login form includes a `Forgot Password?` link. Reset emails return through `/auth/callback` and then forward the user to `/auth/reset-password`.
+
+## Cart, Checkout, Orders, and Vouchers
+
+- Guests can use the cart before logging in.
+- Logged-in customer carts are stored in Supabase.
+- Checkout is customer-only. Admin accounts are blocked from customer checkout.
+- Payment method is currently `Cash on Delivery`.
+- Checkout applies shared validation for Philippine shipping fields and shows a delivery estimate based on region.
+- `Province / Region` and `City / Municipality` stay flexible for non-NCR addresses.
+- If the checkout address uses `Metro Manila`, `NCR`, or `National Capital Region`, `City / Municipality` switches to an NCR-only dropdown to reduce spelling mistakes.
+- Postal code validation requires exactly 4 numeric digits.
+- Available vouchers are fetched from `/api/vouchers` and can be applied during checkout.
+- Orders are created through a server-side RPC flow that also inserts order items, deducts stock, marks a voucher as used, and clears the cart.
+- Checkout rejects invalid quantities, oversized orders, cart mismatches, duplicate submissions, and admin-side misuse before an order is finalized.
+- Customer order detail pages include a shipment timeline and allow cancellation before shipment.
+
+## Claw Machine
+
+- Route: `/game`
+- Customer-only route
+- 2 plays per account per day
+- The claw sweeps left and right automatically
+- The player chooses when to press `Drop Claw`
+- Result handling includes a single server request per play, win/lose messaging, generated sound effects, and win-only confetti/reward reveal
+- Rewards are stored as vouchers in Supabase
+- If the request fails or takes too long, the UI shows a friendly error and resets cleanly instead of getting stuck mid-round
+- The layout includes mobile-specific controls so the play area and action button stay usable on smaller screens
+
+Capsule labels currently used in the game:
+- `Yizz`
+- `Nux`
+- `Lucky`
+- `GG`
+- `67`
+- `Sheesh`
+
+## Reports and Feedback
+
+- Public page: `/report`
+- API route: `POST /api/reports`
+- Report types:
+  - `Bug Report`
+  - `Website Feedback`
+  - `Suggestion`
+- Form fields:
+  - optional name
+  - optional email
+  - report type
+  - required message
+
+Current behavior:
+- The API rate-limits report submissions.
+- Report payloads are validated for allowed report types, reasonable email format, and message length before email/send storage logic runs.
+- The server sends report email through Resend.
+- The server also stores the report in the `reports` table when Supabase is available.
+- Admins can review submitted reports at `/admin/reports`.
+
+Important:
+- The report email feature requires `RESEND_API_KEY`.
+- Optional email settings are `REPORT_RECEIVER_EMAIL` and `REPORT_FROM_EMAIL`.
 
 ## Project Structure
 
 ```text
-app/           Next.js App Router pages and API routes
-components/    Reusable UI building blocks
-hooks/         Shared auth, cart, and toast state
-lib/           Helpers, formatting, mock data, Supabase clients
-supabase/      SQL schema and seed data
+app/           App Router pages and API routes
+components/    Reusable UI components
+hooks/         Shared auth, cart, and UI hooks
+lib/           Helpers, validation, products, Supabase clients, and role logic
+public/        Static images and assets
+scripts/       One-off maintenance scripts
+supabase/      Schema and migrations
+tests/         Vitest coverage
 ```
 
 ## Local Setup
@@ -82,745 +217,135 @@ supabase/      SQL schema and seed data
 npm install
 ```
 
-2. Create `.env.local` from `.env.local.example` and add your Supabase project values:
+2. Create `.env.local` from the example file:
 
 ```bash
 Copy-Item .env.local.example .env.local
 ```
 
-3. Run the SQL in [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) inside the Supabase SQL editor.
+3. Fill in the required Supabase values in `.env.local`.
 
-4. Optional admin setup:
-   - Open Supabase SQL Editor and run:
-   - `insert into public.admin_users (user_id) values ('YOUR_AUTH_USER_ID') on conflict do nothing;`
+4. Run [`supabase/schema.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\schema.sql) in your Supabase SQL editor.
 
-5. Set `NEXT_PUBLIC_SITE_URL` for the environment you are running:
-   - local: `http://localhost:3000`
-   - production: your public app URL such as `https://push2cart.vercel.app`
+5. If you want an admin account, insert its auth user ID into `public.admin_users`.
 
-6. Start the app:
+Example:
+
+```sql
+insert into public.admin_users (user_id)
+values ('YOUR_AUTH_USER_ID')
+on conflict do nothing;
+```
+
+6. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
 7. Open [http://localhost:3000](http://localhost:3000).
-## Available Scripts
 
-- `npm run dev`: start local development server.
-- `npm run build`: create production build (recommended before deploy).
-- `npm start`: run production server after build (if configured in your project).
-- `npm run test`: run the automated test suite for shipping validation, role restrictions, and admin order status rules.
-- `npm run lint`: run lint checks (if configured in your project).
+## Environment Variables
 
-## Supabase Setup Guide
+### Included in `.env.local.example`
 
-1. Create a new Supabase project.
-2. Enable Email auth in `Authentication > Providers`.
-3. Run the schema from [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-4. Copy the project URL, anon key, and `NEXT_PUBLIC_SITE_URL` into `.env.local`.
-5. In `Authentication > URL Configuration`, allow the password reset callback URL for every environment you use:
-   - local: `http://localhost:3000/auth/callback?redirect_to=/auth/reset-password`
-   - production: `https://your-domain.com/auth/callback?redirect_to=/auth/reset-password`
-   - preview: add each preview base URL if you want reset emails to work there too
-6. The app now uses local product images from `public/images/*`.
-
-## Forgot Password Flow
-
-Feature summary:
-- The login form includes a `Forgot Password?` link.
-- Users can request a reset email from `/auth/forgot-password`.
-- Reset emails return through `/auth/callback` and then forward users to `/auth/reset-password`.
-- The reset page validates password length and confirmation before updating the Supabase Auth password.
-- Invalid, expired, or missing recovery links show a recovery error and a path to request a fresh email.
-
-Basic user flow:
-1. User clicks `Forgot Password?`
-2. User enters email
-3. User opens reset email
-4. User sets a new password
-5. User logs in again
-
-## App Notes
-
-- Product reads fall back to local mock data when Supabase is not configured yet.
-- Checkout and mini-game routes redirect to `/auth` if there is no active session.
-- The claw machine uses CSS animations and generated Web Audio sounds, not external audio assets.
-- Voucher rewards are stored in `vouchers`, daily play counts are tracked in `game_plays`, and selected vouchers are marked as used on checkout.
-- Product reviews are stored in `reviews` and linked to each product detail page.
-- Footer now shows Push2Cart branding, creator contact details, GitHub (`https://github.com/binsuhavingfun`), support hours, and role-based `Explore` links for guest and customer views.
-
-## Role Separation
-
-- Guests can browse products and use the guest cart.
-- Customers can shop, check out, view order tracking, manage vouchers, and use the customer profile page.
-- Admins are redirected away from customer-only routes like checkout, customer orders, vouchers, and the mini game.
-- Admin accounts get a management-focused experience through `/admin`, `/admin/orders`, and `/admin/reports`.
-- Admin accounts cannot place customer orders, submit product reviews, use customer vouchers, or play the reward mini game.
-
-## Claw Capsule Meaning
-
-The six items shown at the bottom of the claw machine are capsule types:
-- `Yizz`
-- `Nux`
-- `Lucky`
-- `GG`
-- `67`
-- `Sheesh`
-
-What they mean in gameplay:
-- The claw's horizontal position at drop time maps to one of these capsules.
-- That capsule is sent to the server as `targetCapsule`.
-- Each capsule has its own reward profile (`winChance`, `rareChance`, and discount ranges).
-- The final voucher label shows this source, for example: `12% Off Lucky Voucher`.
-
-Important note:
-- This does not guarantee a specific reward every time.
-- It controls the probability profile used for that round, so timing still matters.
-
-## Mobile Navbar QA Checklist
-
-Use this checklist before shipping navbar updates:
-
-1. Run locally:
-
-```bash
-npm run dev
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_DSN=
 ```
 
-2. Open `http://localhost:3000`, then test mobile view (`375px`, `390px`, `430px`) using browser device tools.
-3. Confirm expected behavior:
-   - Hamburger icon is visible on mobile.
-   - Menu opens and closes on tap.
-   - Menu closes after selecting a link.
-   - Content remains readable and is not blocked by nav when closed.
-   - No horizontal overflow.
-4. Confirm desktop view (`>=1024px`) keeps the logo, visible `Play. Shop. Save.` tagline, main navigation, and account actions on one balanced row.
+### Additional variables used by the report email flow
 
-## Navbar Code Walkthrough (Desktop + Mobile)
+These are used by the codebase but are not currently listed in `.env.local.example`:
 
-This section explains the current `components/navbar.tsx` structure at a higher level.
+```env
+RESEND_API_KEY=
+REPORT_RECEIVER_EMAIL=
+REPORT_FROM_EMAIL=
+```
 
-1. Brand and motto
-- The `Push2Cart` logo and `Play. Shop. Save.` tagline stay visible together on the website.
-- On admin routes the logo text switches to `Push2Cart Admin`.
+Notes:
+- `SUPABASE_SERVICE_ROLE_KEY` is required for the secure checkout RPC path and the privacy cleanup script.
+- `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` are optional unless you want Sentry enabled.
 
-2. Single-row desktop layout
-- On desktop, the logo, main navigation, and auth/account actions share one balanced row.
-- Guest users see the main store links and `Login`.
-- Signed-in shoppers see the store links plus `Cart` and `Profile`.
-- Signed-in admins see dashboard-focused navigation and `Logout`.
+## Available Scripts
 
-3. Mobile behavior
-- On smaller screens the navbar collapses into the brand area plus a hamburger toggle.
-- Opening the menu reveals the same route set in a vertical stack.
-- The menu closes automatically on navigation so it does not block page content.
+- `npm run dev` starts the local development server
+- `npm run build` creates a production build
+- `npm start` starts the production server after build
+- `npm run typecheck` runs TypeScript checks
+- `npm run test` runs the Vitest suite
+- `npm run cleanup:privacy:dry-run` previews demo-account cleanup
+- `npm run cleanup:privacy:execute` runs demo-account cleanup
 
-4. Shared route logic
-- Primary shopper links live in one shared array and admin links live in a separate array.
-- This keeps the navbar easier to maintain when link labels change.
+## Supabase Notes
 
-5. Auth and role handling
-- The navbar reads the current session from the auth hook.
-- It checks `admin_users` in Supabase to decide whether to render shopper or admin navigation.
-- Customer logout lives inside the profile page.
-- Admin logout stays available directly from the admin navbar.
+The schema currently defines and configures:
 
-6. Styling and responsiveness
-- The navbar keeps the pixel/retro arcade styling, balanced spacing, and active-link highlighting.
-- Desktop uses inline navigation; mobile uses a collapsible panel with accessible button labels.
-- Menu auto-closes on route change and link taps.
-- Content stays readable when menu is closed.
+- `products`
+- `cart_items`
+- `orders`
+- `order_items`
+- `order_status_events`
+- `vouchers`
+- `game_plays`
+- `reviews`
+- `admin_users`
+- `reports`
+- `api_rate_limits`
+- `security_events`
 
+It also includes:
 
-## Visual Page Notes
+- seeded sample products
+- RLS policies for public, customer, and admin access
+- `check_rate_limit(...)` for shared server-side rate limiting
+- `create_order_with_items(...)` for secure order creation
 
-- About page:
-  - Uses friendlier product copy for the main description
-  - Keeps the technical stack in a smaller `Built With` section
-  - Includes a frontend-built pixel laptop illustration with code on screen
-- Report page:
-  - Uses a two-column layout with the report form on one side
-  - Includes a frontend-built shopping cart carrying feedback/message cards
-- Mini game page:
-  - The claw starts sweeping left and right automatically
-  - Players time the button press to drop the claw
-  - The claw stays visually attached to the rail/cable assembly
-  - The sweep restarts cleanly after the result flow
+Security migration included in the repo:
 
-## Changed Components and Pages
+- [`supabase/migrations/20260506_fix_security_advisor_warnings.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260506_fix_security_advisor_warnings.sql) tightens report insert policies and restricts sensitive function execution to server-side roles
 
-- Navigation and shell:
-  - `components/navbar.tsx`
-  - `components/footer.tsx`
-  - `app/layout.tsx`
-- Customer account flow:
-  - `app/account/page.tsx`
-  - `components/profile-logout-button.tsx`
-  - `app/orders/page.tsx`
-  - `app/orders/[id]/page.tsx`
-- Admin management flow:
-  - `app/admin/page.tsx`
-  - `app/admin/orders/page.tsx`
-  - `app/admin/orders/[id]/page.tsx`
-  - `app/admin/reports/page.tsx`
-- Marketing/support pages:
-  - `app/about/page.tsx`
-  - `app/report/page.tsx`
-  - `app/contact/page.tsx`
-- Shopping and role-aware product UI:
-  - `app/cart/page.tsx`
-  - `app/checkout/page.tsx`
-  - `app/products/[id]/page.tsx`
-  - `components/add-to-cart-button.tsx`
-  - `components/product-reviews.tsx`
-- Mini game:
-  - `components/claw-machine.tsx`
-- Role checks and API protections:
-  - `lib/admin.ts`
-  - `hooks/use-admin-status.tsx`
-  - `app/api/orders/route.ts`
-  - `app/api/reviews/route.ts`
-  - `app/api/game/play/route.ts`
-  - `app/api/vouchers/route.ts`
+## Privacy Cleanup Script
 
-## GitHub and Vercel Deploy Checklist
+Script: [`scripts/supabase-privacy-cleanup.mjs`](C:\Users\vinci\Documents\Push2Cart\scripts\supabase-privacy-cleanup.mjs)
 
-1. Build test from project root:
+What it does:
+- keeps the configured demo whitelist
+- validates that the required admin demo account still exists in `public.admin_users`
+- supports dry-run mode by default
+- deletes non-whitelisted auth users only when run with `--execute`
+- clears related report and security rows that do not rely on cascade deletes
+
+## Monitoring
+
+Sentry files currently wired in this repo:
+
+- [`instrumentation.ts`](C:\Users\vinci\Documents\Push2Cart\instrumentation.ts)
+- [`instrumentation-client.ts`](C:\Users\vinci\Documents\Push2Cart\instrumentation-client.ts)
+- [`sentry.server.config.ts`](C:\Users\vinci\Documents\Push2Cart\sentry.server.config.ts)
+- [`sentry.edge.config.ts`](C:\Users\vinci\Documents\Push2Cart\sentry.edge.config.ts)
+- [`app/global-error.tsx`](C:\Users\vinci\Documents\Push2Cart\app\global-error.tsx)
+
+Sentry stays disabled unless a DSN is provided.
+
+## Verification
+
+Run these before shipping:
 
 ```bash
+npm run typecheck
+npm run test
 npm run build
 ```
 
-2. Commit and push:
+## Possible Future Improvements
 
-```bash
-git add components/navbar.tsx README.md
-git commit -m "fix(navbar): improve mobile responsiveness and document QA steps"
-git push origin main
-```
-
-3. In Vercel, open `Deployments` and confirm latest deployment status is `Ready`.
-4. Re-test production URL on a phone or mobile emulator.
-
-## Environment Variable Safety
-
-- Never commit `.env.local`.
-- Keep these in Vercel Environment Variables:
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `NEXT_PUBLIC_SITE_URL`
-  - `NEXT_PUBLIC_SENTRY_DSN`
-  - `SENTRY_DSN`
-- Do not expose service keys in `NEXT_PUBLIC_*` variables.
-- If env values are changed in Vercel, redeploy before retesting.
-
-## Demo Privacy Cleanup
-
-Push2Cart includes a whitelist-based Supabase cleanup script for demo preparation:
-- Script: [scripts/supabase-privacy-cleanup.mjs](C:/Users/vinci/Documents/Push2Cart/scripts/supabase-privacy-cleanup.mjs)
-- Whitelist kept in Auth and app data:
-  - `vincetarogpaglicawan@gmail.com`
-  - `uchihaitachi20022@gmail.com`
-- Safety rules:
-  - dry-run is the default behavior
-  - hard delete only happens with `--execute`
-  - the script aborts if either whitelisted user is missing
-  - the script aborts if `vincetarogpaglicawan@gmail.com` is not present in `public.admin_users`
-
-Required server-only environment variable:
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Run the audit first:
-
-```bash
-npm run cleanup:privacy:dry-run
-```
-
-Run the real cleanup only after reviewing the dry-run output:
-
-```bash
-npm run cleanup:privacy:execute
-```
-
-Cleanup behavior:
-- deletes every non-whitelisted Supabase Auth user
-- relies on `on delete cascade` for carts, orders, vouchers, game plays, reviews, and admin rows
-- explicitly deletes non-cascading privacy-sensitive rows in `reports`, `security_events`, and `order_status_events` before deleting the Auth user
-
-## Production Monitoring
-
-Push2Cart now includes Sentry wiring for production error monitoring in:
-- [instrumentation.ts](C:/Users/vinci/Documents/Push2Cart/instrumentation.ts)
-- [instrumentation-client.ts](C:/Users/vinci/Documents/Push2Cart/instrumentation-client.ts)
-- [sentry.server.config.ts](C:/Users/vinci/Documents/Push2Cart/sentry.server.config.ts)
-- [sentry.edge.config.ts](C:/Users/vinci/Documents/Push2Cart/sentry.edge.config.ts)
-- [app/global-error.tsx](C:/Users/vinci/Documents/Push2Cart/app/global-error.tsx)
-
-To enable it:
-
-1. Create a Sentry project for the Next.js app.
-2. Add these environment variables locally and in Vercel:
-   - `NEXT_PUBLIC_SENTRY_DSN`
-   - `SENTRY_DSN`
-3. Redeploy the app after the variables are set.
-4. Trigger a controlled test error and confirm the event appears in Sentry before treating monitoring as active.
-
-Notes:
-- The SDK stays disabled when no DSN is provided.
-- Client, server, edge, and App Router global errors are all wired to report through Sentry.
-- Tracing is enabled with a conservative sample rate in production and a full sample rate in development.
-
-## Safe Deployment and Rollback Process
-
-Use this flow for important production updates, especially when app code and Supabase schema must stay in sync.
-
-### Before deployment
-
-1. Work from a clean branch and review the exact code and SQL being shipped.
-2. Run local verification:
-   - `npm run typecheck`
-   - `npm run test`
-   - `npm run build`
-3. Keep a copy of the current production-ready SQL before applying a new schema change.
-4. If a schema change is destructive or risky, create a backup/export of important live data first.
-5. Prepare rollback SQL before deployment whenever a schema update changes columns, constraints, policies, or functions.
-
-### Vercel deployment steps
-
-1. Push the approved branch to GitHub.
-2. Confirm the required Vercel environment variables are already set.
-3. Deploy the code update to Vercel.
-4. After the deployment is `Ready`, verify the main flows:
-   - guest browsing and guest cart
-   - customer login and checkout
-   - customer orders and vouchers
-   - admin dashboard, orders, and reports
-5. Check browser console output and server/runtime logs for obvious errors.
-
-### Supabase schema deployment steps
-
-1. Review the exact SQL diff in [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-2. Apply schema changes carefully in Supabase SQL Editor.
-3. If the schema and frontend depend on each other, finish the Vercel deployment and then re-test the affected flows immediately.
-4. Confirm new tables, columns, functions, and policies behave as expected before treating the release as complete.
-
-### Rollback process
-
-If the problem is app-code only:
-
-1. Re-deploy the previous stable Vercel version.
-2. Re-check the main guest, customer, and admin flows.
-
-If the problem involves schema or data:
-
-1. Stop applying more changes until the issue is understood.
-2. Run the prepared rollback SQL for the affected schema update.
-3. Restore backed-up data if the issue caused destructive data changes.
-4. Re-deploy the last stable Vercel version if the frontend and backend must match.
-5. Re-test checkout, orders, admin tools, and any route touched by the failed schema change.
-
-### Release sign-off
-
-Only treat a release as complete when:
-- Vercel is serving the intended version
-- Supabase has the intended schema
-- local checks passed (`typecheck`, `test`, `build`)
-- guest, customer, and admin verification passed after deployment
-
-## Shipping Address Validation System
-
-Checkout now uses structured shipping fields and basic validation before an order can be submitted.
-
-Required fields:
-- `full_name`
-- `phone_number`
-- `street_address`
-- `barangay`
-- `city`
-- `province`
-- `postal_code`
-
-Optional field:
-- `delivery_notes`
-
-Validation rules:
-- City must not be empty.
-- Province must not be empty.
-- Postal code must be numeric only.
-- Phone number must match PH format:
-  - `09XXXXXXXXX`
-  - `+639XXXXXXXXX`
-
-Validation messages are shown inline in checkout (example: `Please enter a valid barangay.`).
-
-Metro Manila vs provincial delivery detection:
-- If `province` equals `Metro Manila` (case-insensitive), estimate is `2-4 days`.
-- Otherwise estimate is `4-7 days`.
-
-Checkout shows this immediately after province input:
-- `Estimated delivery: 2-4 days (Metro Manila)`
-- or `Estimated delivery: 4-7 days (Provincial area)`
-
-Delivery notes:
-- Checkout includes an optional notes field for landmark/gate instructions.
-- Saved to Supabase as `delivery_notes`.
-
-Supabase storage (orders table):
-- `full_name`
-- `phone_number`
-- `street_address`
-- `barangay`
-- `city`
-- `province`
-- `postal_code`
-- `delivery_notes`
-
-Migration/update instructions:
-1. Open Supabase SQL Editor.
-2. Run the latest [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart-git/supabase/schema.sql) to ensure new address columns exist.
-3. Existing orders remain compatible because legacy `address` is still retained for fallback display.
-
-## Bug Report and Feedback System
-
-Users can report bugs or submit website feedback using the **Report an Issue** page.
-
-- Reports are sent to: `vincetarogpaglicawan@gmail.com`
-- A report may include: name, email, report type, and message
-- Reports are stored in the database under the `reports` table
-- This feature helps improve usability and detect issues early
-- Implemented routes:
-  - Page: `/report`
-  - API: `POST /api/reports`
-- Contact page includes a direct shortcut to the report form
-- To enable storage, run the latest [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) in Supabase SQL Editor
-- Email notifications are sent via Resend API in the server route
-- Email payload includes report type, name, email, message, and timestamp
-- Email subject format: `[Push2Cart Report] Bug / Feedback / Suggestion`
-
-## .env.local.example Keys
-
-Use this as a safe template (keys only, no real secrets):
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-RESEND_API_KEY=
-REPORT_RECEIVER_EMAIL=vincetarogpaglicawan@gmail.com
-REPORT_FROM_EMAIL="Push2Cart Reports <onboarding@resend.dev>"
-```
-
-Optional server-only key (never expose in public client code):
-
-```env
-SUPABASE_SERVICE_ROLE_KEY=
-```
-
-## Implementation Reference (Code + SQL)
-
-This section documents the exact code and SQL added for:
-- Shipping Address Validation System
-- Bug Report and Feedback System
-
-### 1. Checkout form updates
-
-File: [components/checkout-form.tsx](/C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx)
-
-What was added:
-- Structured shipping fields:
-  - `fullName`, `phoneNumber`, `streetAddress`, `barangay`, `city`, `province`, `postalCode`, `deliveryNotes`
-- Validation before submit using `validateShippingAddress(...)`
-- Delivery estimate preview using `getDeliveryEstimate(province)`
-- Grouped UI sections:
-  - `Shipping Information`
-  - `Delivery Address`
-  - `Delivery Notes`
-
-Why:
-- Prevent incomplete/invalid checkout addresses.
-- Show users expected delivery window instantly.
-- Keep form readable on mobile and desktop.
-
-### 2. Shared shipping validation and estimate logic
-
-File: [lib/shipping.ts](/C:/Users/vinci/Documents/Push2Cart/lib/shipping.ts)
-
-What was added:
-- `validateShippingAddress(input)`
-  - required field checks
-  - PH phone validation (`09XXXXXXXXX` or `+639XXXXXXXXX`)
-  - numeric postal code validation
-- `getDeliveryEstimate(province)`
-  - `Metro Manila` => `2-4 days`
-  - all others => `4-7 days`
-- `buildAddressLine(input)` for legacy/fallback combined address text.
-
-Why:
-- Keep all shipping rules in one reusable place.
-- Use the same logic in UI and API to avoid mismatched behavior.
-
-### 3. Order API validation + storage changes
-
-File: [app/api/orders/route.ts](/C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts)
-
-What was added:
-- Server-side shipping validation (same rules as client).
-- Structured address fields saved into `orders` table:
-  - `phone_number`, `street_address`, `barangay`, `city`, `province`, `postal_code`, `delivery_notes`
-- Fallback `address` string is still saved for compatibility.
-- Delivery estimate returned in response payload.
-
-Why:
-- Server validation protects against bypassing client checks.
-- Structured columns make filtering/reporting/address handling cleaner.
-
-### 4. Order display compatibility updates
-
-Files:
-- [app/orders/[id]/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx)
-- [app/admin/orders/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx)
-- [components/admin-orders-table.tsx](/C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx)
-- [lib/types.ts](/C:/Users/vinci/Documents/Push2Cart/lib/types.ts)
-
-What was added:
-- Types for new structured fields.
-- Display of structured address where available.
-- Fallback to old `address` value for older records.
-- Delivery notes/contact display in order detail.
-
-Why:
-- Prevent breaking older orders after schema changes.
-- Keep admin and customer views consistent.
-
-### 5. Report page UI
-
-File: [app/report/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/report/page.tsx)
-
-What was added:
-- New route: `/report`
-- Form fields:
-  - Name (optional)
-  - Email (optional)
-  - Report Type (`Bug Report`, `Website Feedback`, `Suggestion`)
-  - Message (required)
-- Submit button label: `Send Report`
-- Success message:
-  - `Thanks for the report. We appreciate your feedback.`
-
-Why:
-- Separate bug/feedback reporting from product reviews.
-- Provide a simple public support channel.
-
-### 6. Report API (email + DB)
-
-File: [app/api/reports/route.ts](/C:/Users/vinci/Documents/Push2Cart/app/api/reports/route.ts)
-
-What was added:
-- New endpoint: `POST /api/reports`
-- Input validation:
-  - report type required
-  - message required
-  - email format check when provided
-- Email sending via Resend API:
-  - recipient: `REPORT_RECEIVER_EMAIL` (defaults to `vincetarogpaglicawan@gmail.com`)
-  - subject: `[Push2Cart Report] Bug|Feedback|Suggestion`
-  - body includes report type, name, email, message, timestamp
-- Optional Supabase storage in `reports` table.
-
-Why:
-- Developers get immediate email alerts.
-- Database keeps a searchable issue/feedback history.
-
-### 7. Navigation integration
-
-Files:
-- [components/navbar.tsx](/C:/Users/vinci/Documents/Push2Cart/components/navbar.tsx)
-- [app/contact/page.tsx](/C:/Users/vinci/Documents/Push2Cart/app/contact/page.tsx)
-
-What was added:
-- Navbar link: `Report` -> `/report`
-- Footer keeps creator contact information while the navbar keeps the user-facing `Report` action easy to find
-
-Why:
-- Makes report feature easy to find for users.
-
-### 8. Supabase schema updates
-
-File: [supabase/schema.sql](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql)
-
-Shipping columns added to `orders`:
-```sql
-alter table public.orders add column if not exists phone_number text;
-alter table public.orders add column if not exists street_address text;
-alter table public.orders add column if not exists barangay text;
-alter table public.orders add column if not exists city text;
-alter table public.orders add column if not exists province text;
-alter table public.orders add column if not exists postal_code text;
-alter table public.orders add column if not exists delivery_notes text;
-```
-
-Reports table + policies:
-```sql
-create table if not exists public.reports (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete set null,
-  name text,
-  email text,
-  report_type text not null,
-  message text not null,
-  created_at timestamptz not null default now()
-);
-
-create policy "Anyone can submit reports"
-on public.reports
-for insert
-to public
-with check (true);
-
-create policy "Admins can read reports"
-on public.reports
-for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.admin_users
-    where admin_users.user_id = auth.uid()
-  )
-);
-```
-
-Why:
-- Shipping columns support structured delivery data.
-- `reports` table captures bug/feedback submissions.
-- Policies allow public inserts while restricting reads to admins.
-
-### 9. Environment variables used by report system
-
-```env
-RESEND_API_KEY=
-REPORT_RECEIVER_EMAIL=vincetarogpaglicawan@gmail.com
-REPORT_FROM_EMAIL="Push2Cart Reports <onboarding@resend.dev>"
-```
-
-Why:
-- `RESEND_API_KEY`: authenticates email send requests.
-- `REPORT_RECEIVER_EMAIL`: developer inbox destination.
-- `REPORT_FROM_EMAIL`: sender identity shown in mailbox.
-
-## Claw Machine Behavior Update
-
-- Before dropping, the claw now moves left-right automatically across the machine.
-- The player controls when to drop by pressing the `Drop Claw` button.
-- On button press, horizontal movement locks, then the claw pauses briefly and drops from its current position.
-- The sequence continues with grab, lift, short suspense pause, and then result reveal while keeping the existing win/lose logic.
-- The prize now appears inside the claw machine screen only after a successful catch and lift completion to improve suspense and realism.
-- The exact reward won is shown clearly to the player (voucher value/label and voucher code).
-- A congratulations message and a small `yay` text appear only after a successful win.
-- A lightweight confetti effect appears only on confirmed wins.
-- A custom non-copyright arcade-style win jingle plays only when the reward is revealed.
-- A short non-copyright sad loss sound plays only on confirmed losses.
-- Lose states do not trigger reward reveal, congratulations text, `yay`, confetti, or win jingle.
-- All result feedback is timed to appear only after the animation sequence finishes.
-- The updated behavior is tuned for both desktop and mobile interactions.
-- Mobile layout was improved so players can see the claw gameplay area and `Drop Claw` controls together without needing to scroll during active play.
-
-## Troubleshooting
-
-1. git is not recognized
-- Install Git for Windows, reopen terminal, then run git --version.
-
-2. Build fails on Vercel
-- Check Deployments -> latest deploy -> Build Logs.
-- Fix the first error shown, commit, and redeploy.
-
-3. Supabase connection/auth not working
-- Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set correctly in Vercel.
-- Ensure values are added to the correct environments (Production, Preview, Development).
-
-4. Images not showing in production
-- Ensure assets are in public/ and referenced as /images/....
-- Confirm file names and casing match exactly.
-
-5. Mobile navbar still blocks content
-- Confirm updated components/navbar.tsx is pushed to GitHub.
-- Hard refresh browser (Ctrl+F5) and retest on mobile width.
-
-## Order Management and Security Review
-
-### Current order management
-
-- Orders are stored in Supabase tables: `orders` for the main record and `order_items` for line items in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-- Operational monitoring tables now also include `order_status_events` for lifecycle history and `security_events` for blocked or suspicious actions.
-- Checkout is handled by [components/checkout-form.tsx](C:/Users/vinci/Documents/Push2Cart/components/checkout-form.tsx), which posts to [app/api/orders/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/orders/route.ts).
-- After checkout, the API validates shipping data, rate-limits the request, then calls the `create_order_with_items` Postgres function to create the order, insert `order_items`, deduct stock, mark a selected voucher as used, clear the user cart, and redirect the user to [app/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/orders/[id]/page.tsx).
-- Order records currently include full name, phone, structured delivery address, ordered products, quantity, total price, order status, payment method, payment status, and order timestamp.
-- Order records now snapshot customer email, and the lifecycle supports `pending`, `confirmed`, `preparing`, `shipped`, `out for delivery`, `delivered`, and `cancelled`.
-- Admin order management exists at [app/admin/orders/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/page.tsx) with the table UI in [components/admin-orders-table.tsx](C:/Users/vinci/Documents/Push2Cart/components/admin-orders-table.tsx).
-- Admins can update status through [app/api/admin/orders/[id]/route.ts](C:/Users/vinci/Documents/Push2Cart/app/api/admin/orders/[id]/route.ts), and a dedicated admin order details page now lives at [app/admin/orders/[id]/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/admin/orders/[id]/page.tsx).
-
-### Current security posture
-
-- Authentication is handled by Supabase Auth in [components/auth-forms.tsx](C:/Users/vinci/Documents/Push2Cart/components/auth-forms.tsx); passwords are not stored manually in this codebase.
-- Password recovery uses [app/auth/forgot-password/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/auth/forgot-password/page.tsx), [app/auth/callback/route.ts](C:/Users/vinci/Documents/Push2Cart/app/auth/callback/route.ts), and [app/auth/reset-password/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/auth/reset-password/page.tsx) with Supabase Auth reset emails and password updates.
-- Admin access is checked in [lib/admin.ts](C:/Users/vinci/Documents/Push2Cart/lib/admin.ts) and reinforced by Supabase RLS policies in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-- Public frontend code only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; server-only secrets like `RESEND_API_KEY` stay in server routes.
-- React rendering does not use `dangerouslySetInnerHTML`, which keeps obvious XSS risk low in the current UI.
-- The biggest remaining risks are business-logic gaps: COD is the only payment flow.
-- Validation and monitoring are stronger than before, but still lighter than a full production commerce stack.
-
-### Improvements added in this review
-
-- Checkout now runs through a single atomic database function so order creation, line-item insertion, stock deduction, voucher consumption, and cart clearing happen in one transaction.
-- The order API now calculates totals from database prices inside the database function instead of trusting browser-submitted prices.
-- Checkout now rejects invalid quantities, missing products, and quantities that exceed current stock before the order is finalized.
-- Orders now store `payment_method` and `payment_status`, with COD defaulting to `Cash on Delivery` and `Pending`.
-- Shared rate limiting now protects the checkout, reviews, reports, and game reward routes through [lib/rate-limit.ts](C:/Users/vinci/Documents/Push2Cart/lib/rate-limit.ts).
-- The admin orders table now includes lightweight search and basic order statistics for cleaner day-to-day operations.
-- Admins can now open a dedicated order details view with customer, delivery, payment, and line-item information.
-- Order updates now leave a status activity trail, and the write APIs use tighter server-side input normalization and checks.
-- Checkout now verifies that the posted cart matches the authenticated server-side cart, limits oversized orders, and blocks immediate duplicate submissions from the same account/address.
-- The order lifecycle now follows a more practical operations flow with forward-only transitions and cancellation before shipment.
-- Blocked checkout abuse attempts and invalid admin status transitions are now written to `security_events` for admin-side review.
-
-### Deployment note
-
-- Apply the updated [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql) in Supabase before relying on the new checkout flow.
-- The schema update adds:
-- `payment_method` and `payment_status` columns on `orders`
-- `api_rate_limits` for request throttling
-- `check_rate_limit(...)` for shared API protection
-- `create_order_with_items(...)` for atomic order creation and stock deduction
-
-## Current Project Status
-
-Push2Cart is documented as a polished student-project MVP with the core storefront, account, admin, support, and deployment flows already implemented for the current version.
-
-### Current version checks
-
-- Local verification is in place through `npm run typecheck`, `npm run test`, and `npm run build`.
-- Guest, customer, and admin flows are implemented in the current codebase and can be re-verified after important Supabase schema updates.
-- The latest Supabase schema changes are documented in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-- Safe deployment and rollback steps for Vercel and Supabase schema changes are documented in this README.
-- Sentry monitoring support is wired into the project and can be enabled with the documented DSN environment variables.
-- The current product fallback behavior is intentional for the student-project setup and supports the demo experience when Supabase product reads are unavailable.
-
-### Possible Future Improvements
-
-- If Push2Cart later needs online payments, decide whether Cash on Delivery is enough or if a payment provider with webhook verification is needed.
-- If traffic grows, add stronger fraud and abuse controls such as CAPTCHA or Turnstile on abuse-prone public actions.
+- If Push2Cart later needs online payments, decide whether Cash on Delivery is enough or whether a payment provider with webhook verification is needed.
 - If Push2Cart is presented as a real store, add clearer policies for shipping, returns, refunds, privacy, and support expectations.
-- If Push2Cart later supports real products, add admin tools for product and inventory management.
+- If Push2Cart later supports real products at a larger scale, add stronger inventory and catalog management tools for admins.
 - If Push2Cart stores important live data, set up regular backup and recovery steps.
-
-### Current release checks
-
-- The required environment variables for the current version are documented for local and Vercel setup.
-- The required Supabase SQL changes for the current version are documented in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-- The current mobile and desktop flows are covered by the implemented route structure and local verification steps.
-- The key user-facing areas such as Home, Products, Cart, Checkout, Profile, Orders, Admin Orders, and the Mini Game are part of the current project verification flow.
-- The footer, navbar, profile flows, report page, auth pages, and admin dashboard reflect the current implemented routes and role rules.
-
-
-

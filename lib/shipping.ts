@@ -12,13 +12,45 @@ export type ShippingAddressInput = {
 export type ShippingValidationErrors = Partial<Record<keyof ShippingAddressInput, string>>;
 
 const PH_PHONE_REGEX = /^(09\d{9}|\+639\d{9})$/;
-const NUMERIC_REGEX = /^\d+$/;
+const PH_POSTAL_CODE_REGEX = /^\d{4}$/;
+const NCR_REGION_ALIASES = ["metro manila", "ncr", "national capital region"] as const;
+export const NCR_CITIES = [
+  "Caloocan",
+  "Las Piñas",
+  "Makati",
+  "Malabon",
+  "Mandaluyong",
+  "Manila",
+  "Marikina",
+  "Muntinlupa",
+  "Navotas",
+  "Parañaque",
+  "Pasay",
+  "Pasig",
+  "Pateros",
+  "Quezon City",
+  "San Juan",
+  "Taguig",
+  "Valenzuela"
+] as const;
 
 function cleanText(value: unknown) {
   if (typeof value !== "string") {
     return "";
   }
   return value.trim();
+}
+
+function normalizeForLookup(value: string) {
+  return cleanText(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+export function isNcrRegion(value: string) {
+  return NCR_REGION_ALIASES.includes(normalizeForLookup(value) as (typeof NCR_REGION_ALIASES)[number]);
+}
+
+export function isNcrCity(value: string) {
+  return NCR_CITIES.some((city) => city.toLowerCase() === normalizeForLookup(value));
 }
 
 export function normalizeShippingAddress(input: ShippingAddressInput): ShippingAddressInput {
@@ -59,31 +91,29 @@ export function validateShippingAddress(input: ShippingAddressInput): ShippingVa
 
   if (!value.city) {
     errors.city = "City or municipality is required.";
+  } else if (isNcrRegion(value.province) && !isNcrCity(value.city)) {
+    errors.city = "Please select a valid NCR city or municipality.";
   }
 
   if (!value.province) {
-    errors.province = "Province is required.";
+    errors.province = "Province or region is required.";
   }
 
   if (!value.postalCode) {
     errors.postalCode = "Postal code is required.";
-  } else if (!NUMERIC_REGEX.test(value.postalCode)) {
-    errors.postalCode = "Postal code must be numeric.";
+  } else if (!PH_POSTAL_CODE_REGEX.test(value.postalCode)) {
+    errors.postalCode = "Postal code must be exactly 4 numeric digits.";
   }
 
   return errors;
 }
 
-export function isMetroManila(province: string) {
-  return cleanText(province).toLowerCase() === "metro manila";
-}
-
 export function getDeliveryEstimate(province: string) {
-  if (isMetroManila(province)) {
+  if (isNcrRegion(province)) {
     return {
       days: "2-4 days",
       label: "2-4 days",
-      areaLabel: "Metro Manila",
+      areaLabel: "NCR / Metro Manila",
       regionType: "metro"
     } as const;
   }

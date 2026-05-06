@@ -7,6 +7,8 @@ import { useCart } from "@/hooks/use-cart";
 import {
   buildAddressLine,
   getDeliveryEstimate,
+  isNcrRegion,
+  NCR_CITIES,
   type ShippingAddressInput,
   validateShippingAddress
 } from "@/lib/shipping";
@@ -52,17 +54,38 @@ export function CheckoutForm() {
     ? (subtotal * selectedVoucher.discount_percent) / 100
     : 0;
   const totalAfterDiscount = Math.max(subtotal - discountAmount, 0);
+  const isNcrAddress = isNcrRegion(shipping.province);
   const deliveryEstimate = shipping.province.trim()
     ? getDeliveryEstimate(shipping.province)
     : null;
 
   const updateField = (field: keyof ShippingAddressInput, value: string) => {
-    setShipping((current) => ({ ...current, [field]: value }));
+    setShipping((current) => {
+      const next = { ...current, [field]: value };
+
+      if (field === "province") {
+        if (!isNcrRegion(value)) {
+          return next;
+        }
+
+        if (!NCR_CITIES.includes(next.city as (typeof NCR_CITIES)[number])) {
+          next.city = "";
+        }
+      }
+
+      return next;
+    });
     setFieldErrors((current) => {
       if (!current[field]) {
         return current;
       }
-      return { ...current, [field]: "" };
+      const next = { ...current, [field]: "" };
+
+      if (field === "province") {
+        next.city = "";
+      }
+
+      return next;
     });
   };
 
@@ -177,22 +200,39 @@ export function CheckoutForm() {
                 </label>
                 <label className="block space-y-2">
                   <span className="pixel-heading text-[10px] text-white">City / Municipality</span>
-                  <input
-                    required
-                    value={shipping.city}
-                    onChange={(event) => updateField("city", event.target.value)}
-                    className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
-                  />
+                  {isNcrAddress ? (
+                    <select
+                      required
+                      value={shipping.city}
+                      onChange={(event) => updateField("city", event.target.value)}
+                      className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
+                    >
+                      <option value="">Select NCR city / municipality</option>
+                      {NCR_CITIES.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      required
+                      value={shipping.city}
+                      onChange={(event) => updateField("city", event.target.value)}
+                      className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
+                    />
+                  )}
                   {fieldErrors.city ? <p className="text-xs text-primary">{fieldErrors.city}</p> : null}
                 </label>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block space-y-2">
-                  <span className="pixel-heading text-[10px] text-white">Province</span>
+                  <span className="pixel-heading text-[10px] text-white">Province / Region</span>
                   <input
                     required
                     value={shipping.province}
                     onChange={(event) => updateField("province", event.target.value)}
+                    placeholder="Metro Manila, NCR, Laguna, Cebu, etc."
                     className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
                   />
                   {fieldErrors.province ? (
@@ -205,6 +245,9 @@ export function CheckoutForm() {
                     required
                     value={shipping.postalCode}
                     onChange={(event) => updateField("postalCode", event.target.value)}
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="4 digits"
                     className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
                   />
                   {fieldErrors.postalCode ? (
@@ -223,7 +266,7 @@ export function CheckoutForm() {
           <section className="space-y-3">
             <h3 className="pixel-heading text-xs text-accent">Delivery Notes</h3>
             <label className="block space-y-2">
-              <span className="pixel-heading text-[10px] text-white">Optional Notes</span>
+              <span className="pixel-heading text-[10px] text-white">Delivery Notes (optional)</span>
               <textarea
                 value={shipping.deliveryNotes}
                 onChange={(event) => updateField("deliveryNotes", event.target.value)}
