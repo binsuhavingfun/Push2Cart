@@ -30,7 +30,7 @@ The current homepage featured section uses:
 - Product listing and product detail pages
 - Product reviews with 1 to 5 star ratings and comments
 - Checkout with Cash on Delivery, shipping validation, and voucher redemption
-- Customer account page with profile overview, orders, purchase history, vouchers, and account support
+- Customer account page with profile overview, orders, purchase history, vouchers, and logout
 - Order list and order detail pages with status timeline
 - Customer order cancellation before shipment
 - Daily claw machine mini-game with 2 plays per account per day
@@ -115,7 +115,7 @@ Notes:
 - Use the customer cancel action only before an order reaches shipment
 - Use available vouchers during checkout
 - Track orders from `/orders` and `/orders/[id]`
-- View account information, purchase history, vouchers, and account support on `/account`
+- View account information, purchase history, vouchers, and logout on `/account`
 - Play the claw machine and receive account-bound vouchers
 
 ### Admin
@@ -194,7 +194,8 @@ Current behavior:
 
 Important:
 - The report email feature requires `RESEND_API_KEY`.
-- Optional email settings are `REPORT_RECEIVER_EMAIL` and `REPORT_FROM_EMAIL`.
+- `REPORT_RECEIVER_EMAIL` is required so submitted reports have a delivery inbox.
+- `REPORT_FROM_EMAIL` is optional and falls back to the Resend onboarding sender if omitted.
 
 ## Project Structure
 
@@ -270,6 +271,7 @@ REPORT_FROM_EMAIL=
 
 Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` is required for the secure checkout RPC path and the privacy cleanup script.
+- `REPORT_RECEIVER_EMAIL` is required if you want the public report form to work.
 - `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` are optional unless you want Sentry enabled.
 
 ## Available Scripts
