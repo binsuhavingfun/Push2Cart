@@ -59,6 +59,10 @@ Shop featured picks. Keep it simple.
   - `/admin/reports`
 - Support route:
   - `/report`
+- Authentication routes:
+  - `/auth`
+  - `/auth/forgot-password`
+  - `/auth/reset-password`
 
 ## Project Structure
 
@@ -90,13 +94,17 @@ Copy-Item .env.local.example .env.local
    - Open Supabase SQL Editor and run:
    - `insert into public.admin_users (user_id) values ('YOUR_AUTH_USER_ID') on conflict do nothing;`
 
-5. Start the app:
+5. Set `NEXT_PUBLIC_SITE_URL` for the environment you are running:
+   - local: `http://localhost:3000`
+   - production: your public app URL such as `https://push2cart.vercel.app`
+
+6. Start the app:
 
 ```bash
 npm run dev
 ```
 
-6. Open [http://localhost:3000](http://localhost:3000).
+7. Open [http://localhost:3000](http://localhost:3000).
 ## Available Scripts
 
 - `npm run dev`: start local development server.
@@ -110,8 +118,28 @@ npm run dev
 1. Create a new Supabase project.
 2. Enable Email auth in `Authentication > Providers`.
 3. Run the schema from [`supabase/schema.sql`](/C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
-4. Copy the project URL and anon key into `.env.local`.
-5. The app now uses local product images from `public/images/*`.
+4. Copy the project URL, anon key, and `NEXT_PUBLIC_SITE_URL` into `.env.local`.
+5. In `Authentication > URL Configuration`, allow the password reset callback URL for every environment you use:
+   - local: `http://localhost:3000/auth/callback?redirect_to=/auth/reset-password`
+   - production: `https://your-domain.com/auth/callback?redirect_to=/auth/reset-password`
+   - preview: add each preview base URL if you want reset emails to work there too
+6. The app now uses local product images from `public/images/*`.
+
+## Forgot Password Flow
+
+Feature summary:
+- The login form includes a `Forgot Password?` link.
+- Users can request a reset email from `/auth/forgot-password`.
+- Reset emails return through `/auth/callback` and then forward users to `/auth/reset-password`.
+- The reset page validates password length and confirmation before updating the Supabase Auth password.
+- Invalid, expired, or missing recovery links show a recovery error and a path to request a fresh email.
+
+Basic user flow:
+1. User clicks `Forgot Password?`
+2. User enters email
+3. User opens reset email
+4. User sets a new password
+5. User logs in again
 
 ## App Notes
 
@@ -281,10 +309,44 @@ git push origin main
 - Keep these in Vercel Environment Variables:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `NEXT_PUBLIC_SITE_URL`
   - `NEXT_PUBLIC_SENTRY_DSN`
   - `SENTRY_DSN`
 - Do not expose service keys in `NEXT_PUBLIC_*` variables.
 - If env values are changed in Vercel, redeploy before retesting.
+
+## Demo Privacy Cleanup
+
+Push2Cart includes a whitelist-based Supabase cleanup script for demo preparation:
+- Script: [scripts/supabase-privacy-cleanup.mjs](C:/Users/vinci/Documents/Push2Cart/scripts/supabase-privacy-cleanup.mjs)
+- Whitelist kept in Auth and app data:
+  - `vincetarogpaglicawan@gmail.com`
+  - `uchihaitachi20022@gmail.com`
+- Safety rules:
+  - dry-run is the default behavior
+  - hard delete only happens with `--execute`
+  - the script aborts if either whitelisted user is missing
+  - the script aborts if `vincetarogpaglicawan@gmail.com` is not present in `public.admin_users`
+
+Required server-only environment variable:
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Run the audit first:
+
+```bash
+npm run cleanup:privacy:dry-run
+```
+
+Run the real cleanup only after reviewing the dry-run output:
+
+```bash
+npm run cleanup:privacy:execute
+```
+
+Cleanup behavior:
+- deletes every non-whitelisted Supabase Auth user
+- relies on `on delete cascade` for carts, orders, vouchers, game plays, reviews, and admin rows
+- explicitly deletes non-cascading privacy-sensitive rows in `reports`, `security_events`, and `order_status_events` before deleting the Auth user
 
 ## Production Monitoring
 
@@ -443,6 +505,7 @@ Use this as a safe template (keys only, no real secrets):
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 RESEND_API_KEY=
 REPORT_RECEIVER_EMAIL=vincetarogpaglicawan@gmail.com
 REPORT_FROM_EMAIL="Push2Cart Reports <onboarding@resend.dev>"
@@ -700,6 +763,7 @@ Why:
 ### Current security posture
 
 - Authentication is handled by Supabase Auth in [components/auth-forms.tsx](C:/Users/vinci/Documents/Push2Cart/components/auth-forms.tsx); passwords are not stored manually in this codebase.
+- Password recovery uses [app/auth/forgot-password/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/auth/forgot-password/page.tsx), [app/auth/callback/route.ts](C:/Users/vinci/Documents/Push2Cart/app/auth/callback/route.ts), and [app/auth/reset-password/page.tsx](C:/Users/vinci/Documents/Push2Cart/app/auth/reset-password/page.tsx) with Supabase Auth reset emails and password updates.
 - Admin access is checked in [lib/admin.ts](C:/Users/vinci/Documents/Push2Cart/lib/admin.ts) and reinforced by Supabase RLS policies in [supabase/schema.sql](C:/Users/vinci/Documents/Push2Cart/supabase/schema.sql).
 - Public frontend code only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; server-only secrets like `RESEND_API_KEY` stay in server routes.
 - React rendering does not use `dangerouslySetInnerHTML`, which keeps obvious XSS risk low in the current UI.

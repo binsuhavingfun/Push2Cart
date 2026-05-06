@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -14,6 +15,12 @@ export function AuthForms() {
   const [submitting, setSubmitting] = useState(false);
 
   const nextPath = searchParams.get("next") ?? "/products";
+  const authError = searchParams.get("error");
+  const resetStatus = searchParams.get("reset");
+  const statusMessage =
+    resetStatus === "success"
+      ? "Password updated. Please log in again with your new password."
+      : authError;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,7 +83,17 @@ export function AuthForms() {
           />
         </label>
         <label className="block space-y-2">
-          <span className="pixel-heading text-[10px] text-white">Password</span>
+          <div className="flex items-baseline justify-between">
+            <span className="pixel-heading text-[10px] text-white">Password</span>
+            {mode === "login" ? (
+              <Link
+                href="/auth/forgot-password"
+                className="text-[10px] text-white/50 transition-colors hover:text-accent"
+              >
+                Forgot Password?
+              </Link>
+            ) : null}
+          </div>
           <input
             className="w-full border border-white/15 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
             type="password"
@@ -92,6 +109,7 @@ export function AuthForms() {
         >
           {submitting ? "Loading..." : mode === "login" ? "Login" : "Create Account"}
         </button>
+        {statusMessage ? <p className="text-sm text-secondary">{statusMessage}</p> : null}
         {message ? <p className="text-sm text-secondary">{message}</p> : null}
       </form>
     </div>

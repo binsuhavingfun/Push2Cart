@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --config vitest.config.mjs"
+    "test": "vitest run --config vitest.config.mjs",
+    "cleanup:privacy:dry-run": "node scripts/supabase-privacy-cleanup.mjs",
+    "cleanup:privacy:execute": "node scripts/supabase-privacy-cleanup.mjs --execute"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.51.0",
