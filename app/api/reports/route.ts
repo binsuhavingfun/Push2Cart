@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import {
+  REPORT_EMAIL_MAX_LENGTH,
+  REPORT_MESSAGE_MAX_LENGTH,
+  REPORT_NAME_MAX_LENGTH,
+  REPORT_TYPE_MAX_LENGTH,
+  isAllowedReportType
+} from "@/lib/report-options";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isReasonableEmail, normalizeLongText, normalizeShortText } from "@/lib/validation";
 
@@ -9,8 +16,6 @@ type ReportPayload = {
   reportType?: string;
   message?: string;
 };
-
-const SUPPORT_EMAIL = "vincetarogpaglicawan@gmail.com";
 
 function subjectLabel(reportType: string) {
   const normalized = reportType.trim().toLowerCase();
@@ -38,13 +43,17 @@ export async function POST(request: Request) {
 
   const payload = (await request.json()) as ReportPayload;
 
-  const name = normalizeShortText(payload.name, 120);
-  const email = normalizeShortText(payload.email, 160);
-  const reportType = normalizeShortText(payload.reportType, 80);
-  const message = normalizeLongText(payload.message, 1200);
+  const name = normalizeShortText(payload.name, REPORT_NAME_MAX_LENGTH);
+  const email = normalizeShortText(payload.email, REPORT_EMAIL_MAX_LENGTH);
+  const reportType = normalizeShortText(payload.reportType, REPORT_TYPE_MAX_LENGTH);
+  const message = normalizeLongText(payload.message, REPORT_MESSAGE_MAX_LENGTH);
 
   if (!reportType) {
     return NextResponse.json({ error: "Please select a report type." }, { status: 400 });
+  }
+
+  if (!isAllowedReportType(reportType)) {
+    return NextResponse.json({ error: "Please choose a valid report type." }, { status: 400 });
   }
 
   if (!message) {
@@ -56,9 +65,18 @@ export async function POST(request: Request) {
   }
 
   const resendKey = process.env.RESEND_API_KEY;
+  const reportReceiverEmail = process.env.REPORT_RECEIVER_EMAIL;
+
   if (!resendKey) {
     return NextResponse.json(
       { error: "Missing RESEND_API_KEY. Please configure report email sending first." },
+      { status: 500 }
+    );
+  }
+
+  if (!reportReceiverEmail) {
+    return NextResponse.json(
+      { error: "Missing REPORT_RECEIVER_EMAIL. Please configure report delivery first." },
       { status: 500 }
     );
   }
@@ -75,7 +93,7 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify({
       from: process.env.REPORT_FROM_EMAIL ?? "Push2Cart Reports <onboarding@resend.dev>",
-      to: [process.env.REPORT_RECEIVER_EMAIL ?? SUPPORT_EMAIL],
+      to: [reportReceiverEmail],
       subject,
       text: [
         `Report Type: ${reportType}`,
@@ -112,5 +130,5 @@ export async function POST(request: Request) {
     });
   }
 
-  return NextResponse.json({ supportEmail: SUPPORT_EMAIL, message: "Thanks for the report. We appreciate your feedback." });
+  return NextResponse.json({ message: "Thanks for the report. We appreciate your feedback." });
 }

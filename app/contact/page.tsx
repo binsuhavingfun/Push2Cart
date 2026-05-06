@@ -11,7 +11,7 @@ export default function ContactPage() {
       />
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { label: "Email", value: "vincetarogpaglicawan@gmail.com" },
+          { label: "Support", value: "Use the report form for order, checkout, and website concerns." },
           {
             label: "GitHub",
             value: "https://github.com/binsuhavingfun",
