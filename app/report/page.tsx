@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { SectionHeading } from "@/components/section-heading";
-
-const reportTypes = ["Bug Report", "Website Feedback", "Suggestion"];
+import { REPORT_TYPES, type ReportType } from "@/lib/report-options";
 
 export default function ReportIssuePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [reportType, setReportType] = useState("Bug Report");
+  const [reportType, setReportType] = useState<ReportType>("Bug Report");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -83,13 +82,13 @@ export default function ReportIssuePage() {
           </div>
 
           <label className="space-y-2">
-            <span className="pixel-heading text-[10px] text-white">Report Type</span>
+              <span className="pixel-heading text-[10px] text-white">Report Type</span>
             <select
               value={reportType}
-              onChange={(event) => setReportType(event.target.value)}
+              onChange={(event) => setReportType(event.target.value as ReportType)}
               className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
             >
-              {reportTypes.map((type) => (
+              {REPORT_TYPES.map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>

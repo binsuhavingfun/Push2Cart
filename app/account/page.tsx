@@ -72,8 +72,8 @@ export default async function AccountPage() {
             <a href="#vouchers" className="border border-white/10 px-4 py-3 transition-colors hover:text-white">
               Vouchers
             </a>
-            <a href="#settings" className="border border-white/10 px-4 py-3 transition-colors hover:text-white">
-              Settings
+            <a href="#account-support" className="border border-white/10 px-4 py-3 transition-colors hover:text-white">
+              Account Support
             </a>
           </nav>
           <ProfileLogoutButton className="pixel-border mt-5 w-full px-4 py-3 text-xs" />
@@ -210,17 +210,17 @@ export default async function AccountPage() {
             </div>
           </section>
 
-          <section id="settings" className="pixel-border pixel-panel p-6">
-            <p className="pixel-heading text-xs text-white">Settings</p>
+          <section id="account-support" className="pixel-border pixel-panel p-6">
+            <p className="pixel-heading text-xs text-white">Account Support</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="border border-white/10 bg-background/40 p-4 text-sm text-white/75">
-                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Account Details</p>
-                <p className="mt-2">Your signed-in email is used for login and order updates.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Account Info</p>
+                <p className="mt-2">Your signed-in email is used for login, order updates, and account identification.</p>
               </div>
               <div className="border border-white/10 bg-background/40 p-4 text-sm text-white/75">
-                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Need Help?</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Help &amp; Feedback</p>
                 <p className="mt-2">
-                  Use the <Link href="/report" className="text-secondary hover:text-white">report form</Link> for feedback or issues.
+                  Use the <Link href="/report" className="text-secondary hover:text-white">report form</Link> to send feedback, issues, or suggestions about your shopping experience.
                 </p>
               </div>
             </div>

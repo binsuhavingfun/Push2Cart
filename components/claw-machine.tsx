@@ -3,11 +3,26 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 type RewardResult = {
+  id?: string;
   code: string;
   discountPercent: number;
   rarity: "common" | "rare";
   capsuleName?: string;
   rewardLabel?: string;
+};
+
+type GameApiPayload = {
+  success: boolean;
+  won: boolean;
+  playsLeft: number;
+  voucher?: {
+    id: string;
+    code: string;
+    label: string;
+    discountPercent: number;
+  };
+  message?: string;
+  error?: string;
 };
 
 type Phase = "ready" | "dropping" | "grabbing" | "lifting" | "result";
@@ -30,6 +45,7 @@ const GRAB_HOLD_MS = 420;
 const LIFT_DURATION_MS = 700;
 const RESULT_SHOW_MS = 1600;
 const REWARD_REVEAL_DELAY_MS = 420;
+const REQUEST_TIMEOUT_MS = 8000;
 const CONFETTI_COUNT = 22;
 const BASE_CABLE_HEIGHT = 46;
 const DROP_DEPTH = 210;
@@ -90,6 +106,34 @@ export function ClawMachine({
       const timeoutId = setTimeout(resolve, ms);
       workflowTimeoutsRef.current.push(timeoutId);
     });
+
+  const parseGameResponse = async (response: Response): Promise<GameApiPayload> => {
+    const fallbackError = response.ok
+      ? "The claw machine returned an unexpected response."
+      : "The claw machine request failed.";
+
+    const text = await response.text();
+
+    if (!text) {
+      return {
+        success: false,
+        won: false,
+        playsLeft: 0,
+        error: fallbackError
+      };
+    }
+
+    try {
+      return JSON.parse(text) as GameApiPayload;
+    } catch {
+      return {
+        success: false,
+        won: false,
+        playsLeft: 0,
+        error: fallbackError
+      };
+    }
+  };
 
   const resetClawVisualState = () => {
     setDropDepth(0);
@@ -271,79 +315,96 @@ export function ClawMachine({
 
     const targetCapsule = getCapsuleByOffset(offsetRef.current);
 
-    const responsePromise = fetch("/api/game/play", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ userId, targetCapsule })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    setPhase("dropping");
-    setMessage("Carriage locked. Preparing drop...");
+    try {
+      const responsePromise = fetch("/api/game/play", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ userId, targetCapsule }),
+        signal: controller.signal
+      });
 
-    await wait(PRE_DROP_PAUSE_MS);
-    if (!mountedRef.current) return;
+      setPhase("dropping");
+      setMessage("Carriage locked. Preparing drop...");
 
-    playSequence("drop");
-    setMessage("Claw descending...");
-    setDropDepth(DROP_DEPTH);
-
-    await wait(DROP_DURATION_MS);
-    if (!mountedRef.current) return;
-
-    setPhase("grabbing");
-    setMessage("Claw grabbing capsule...");
-
-    await wait(GRAB_HOLD_MS);
-    if (!mountedRef.current) return;
-
-    setPhase("lifting");
-    setMessage("Lifting claw...");
-    setDropDepth(0);
-
-    await wait(LIFT_DURATION_MS);
-    if (!mountedRef.current) return;
-
-    const response = await responsePromise;
-    const payload = (await response.json()) as {
-      error?: string;
-      playsLeft?: number;
-      didWin?: boolean;
-      reward?: RewardResult | null;
-    };
-
-    setPhase("result");
-
-    if (!response.ok) {
-      playSequence("lose");
-      setMessage(payload.error ?? "Claw jammed. Try again soon.");
-    } else if (payload.didWin && payload.reward) {
-      const reward = payload.reward;
-      setMessage("Claw secured something...");
-      await wait(REWARD_REVEAL_DELAY_MS);
+      await wait(PRE_DROP_PAUSE_MS);
       if (!mountedRef.current) return;
-      setRevealedReward(reward);
-      setConfettiPieces(buildConfettiPieces());
-      setShowConfetti(true);
-      playWinJingle();
-      setMessage(
-        `${reward.rarity === "rare" ? "Jackpot" : "Win"}: ${reward.discountPercent}% off with code ${reward.code}`
-      );
-    } else {
+
+      playSequence("drop");
+      setMessage("Claw descending...");
+      setDropDepth(DROP_DEPTH);
+
+      await wait(DROP_DURATION_MS);
+      if (!mountedRef.current) return;
+
+      setPhase("grabbing");
+      setMessage("Claw grabbing capsule...");
+
+      await wait(GRAB_HOLD_MS);
+      if (!mountedRef.current) return;
+
+      setPhase("lifting");
+      setMessage("Lifting claw...");
+      setDropDepth(0);
+
+      await wait(LIFT_DURATION_MS);
+      if (!mountedRef.current) return;
+
+      const response = await responsePromise;
+      clearTimeout(timeoutId);
+      const payload = await parseGameResponse(response);
+
+      setPhase("result");
+
+      if (!response.ok || !payload.success) {
+        playSequence("lose");
+        setMessage(payload.error ?? payload.message ?? "Claw jammed. Try again soon.");
+      } else if (payload.won && payload.voucher) {
+        const reward: RewardResult = {
+          id: payload.voucher.id,
+          code: payload.voucher.code,
+          discountPercent: payload.voucher.discountPercent,
+          rarity: payload.voucher.discountPercent >= 18 ? "rare" : "common",
+          rewardLabel: payload.voucher.label
+        };
+        setMessage("Claw secured something...");
+        await wait(REWARD_REVEAL_DELAY_MS);
+        if (!mountedRef.current) return;
+        setRevealedReward(reward);
+        setConfettiPieces(buildConfettiPieces());
+        setShowConfetti(true);
+        playWinJingle();
+        setMessage(payload.message ?? `Win: ${reward.discountPercent}% off with code ${reward.code}`);
+      } else {
+        playSequence("lose");
+        setMessage(payload.message ?? "No reward this round. Try again on your next play.");
+      }
+
+      setPlaysLeft(payload.playsLeft);
+      await wait(RESULT_SHOW_MS);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (!mountedRef.current) return;
+      setPhase("result");
       playSequence("lose");
-      setMessage("No reward this round. Try again on your next play.");
+      const timeoutMessage =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "The claw machine took too long to respond. Please try again."
+          : "The claw machine could not finish this round. Please try again.";
+      setMessage(timeoutMessage);
+      await wait(RESULT_SHOW_MS);
+    } finally {
+      clearTimeout(timeoutId);
+      if (!mountedRef.current) return;
+      setPhase("ready");
+      setMessage("Time your shot and drop the claw.");
+      resetClawVisualState();
+      setLoading(false);
     }
-
-    setPlaysLeft((current) => payload.playsLeft ?? Math.max(current - 1, 0));
-
-    await wait(RESULT_SHOW_MS);
-    if (!mountedRef.current) return;
-
-    setPhase("ready");
-    setMessage("Time your shot and drop the claw.");
-    resetClawVisualState();
-    setLoading(false);
   };
 
   const phaseLabel =

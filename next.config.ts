@@ -1,8 +1,10 @@
+import path from "node:path";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  images: {}
+  images: {},
+  outputFileTracingRoot: path.resolve(process.cwd())
 };
 
 export default withSentryConfig(nextConfig, {

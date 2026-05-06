@@ -201,6 +201,8 @@ drop policy if exists "Authenticated users create reviews" on public.reviews;
 drop policy if exists "Admins delete reviews" on public.reviews;
 drop policy if exists "Users read own admin row" on public.admin_users;
 drop policy if exists "Anyone can submit reports" on public.reports;
+drop policy if exists "Anonymous users can submit validated reports" on public.reports;
+drop policy if exists "Signed-in users can submit validated reports" on public.reports;
 drop policy if exists "Admins can read reports" on public.reports;
 drop policy if exists "Admins can view all orders" on public.orders;
 drop policy if exists "Admins can view all order items" on public.order_items;
@@ -387,11 +389,47 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
-create policy "Anyone can submit reports"
+create policy "Anonymous users can submit validated reports"
 on public.reports
 for insert
-to public
-with check (true);
+to anon
+with check (
+  user_id is null
+  and report_type in ('Bug Report', 'Website Feedback', 'Suggestion')
+  and char_length(trim(message)) between 1 and 1200
+  and (
+    name is null
+    or char_length(trim(name)) between 1 and 120
+  )
+  and (
+    email is null
+    or (
+      char_length(trim(email)) between 3 and 160
+      and email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+    )
+  )
+);
+
+create policy "Signed-in users can submit validated reports"
+on public.reports
+for insert
+to authenticated
+with check (
+  user_id = (select auth.uid())
+  and report_type in ('Bug Report', 'Website Feedback', 'Suggestion')
+  and char_length(trim(message)) between 1 and 1200
+  and (
+    name is null
+    or char_length(trim(name)) between 1 and 120
+  )
+  and (
+    email is null
+    or (
+      char_length(trim(email)) between 3 and 160
+      and email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+    )
+  )
+);
 
 create policy "Admins can read reports"
 on public.reports
@@ -462,8 +500,8 @@ create or replace function public.check_rate_limit(
 )
 returns jsonb
 language plpgsql
-security definer
-set search_path = public
+security invoker
+set search_path = ''
 as $$
 declare
   v_window_seconds integer := greatest(coalesce(p_window_seconds, 60), 1);
@@ -471,6 +509,10 @@ declare
   v_window_start timestamptz;
   v_request_count integer;
 begin
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    raise exception 'Only server-side roles may execute check_rate_limit.';
+  end if;
+
   if coalesce(trim(p_scope), '') = '' or coalesce(trim(p_identifier), '') = '' then
     raise exception 'Rate limit scope and identifier are required.';
   end if;
@@ -518,10 +560,11 @@ returns table (
   payment_status text
 )
 language plpgsql
-security definer
-set search_path = public
+security invoker
+set search_path = ''
 as $$
 declare
+  v_request_user_id uuid := auth.uid();
   v_item_count integer;
   v_product_count integer;
   v_subtotal numeric(10, 2);
@@ -529,8 +572,22 @@ declare
   v_final_total numeric(10, 2);
   v_order_id uuid;
 begin
-  if auth.uid() is null or auth.uid() <> p_user_id then
-    raise exception 'You are not authorized to create this order.';
+  if current_user not in ('service_role', 'postgres', 'supabase_admin') then
+    if v_request_user_id is null or v_request_user_id <> p_user_id then
+      raise exception 'You are not authorized to create this order.';
+    end if;
+  end if;
+
+  if p_user_id is null then
+    raise exception 'A valid user is required to create an order.';
+  end if;
+
+  if exists (
+    select 1
+    from public.admin_users
+    where public.admin_users.user_id = p_user_id
+  ) then
+    raise exception 'Admin accounts cannot place customer orders.';
   end if;
 
   if jsonb_typeof(p_items) <> 'array' then
@@ -676,10 +733,14 @@ end;
 $$;
 
 revoke all on function public.check_rate_limit(text, text, integer, integer) from public;
-grant execute on function public.check_rate_limit(text, text, integer, integer) to anon, authenticated;
+revoke execute on function public.check_rate_limit(text, text, integer, integer) from anon;
+revoke execute on function public.check_rate_limit(text, text, integer, integer) from authenticated;
+grant execute on function public.check_rate_limit(text, text, integer, integer) to service_role;
 
 revoke all on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) from public;
-grant execute on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) to authenticated;
+revoke execute on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) from anon;
+revoke execute on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) from authenticated;
+grant execute on function public.create_order_with_items(uuid, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb) to service_role;
 
 insert into public.products (id, name, description, price, image_url, stock)
 values

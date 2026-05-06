@@ -4,8 +4,22 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RewardPayload = {
-  userId: string;
+  userId?: string;
   targetCapsule?: string;
+};
+
+type GameApiResponse = {
+  success: boolean;
+  won: boolean;
+  playsLeft: number;
+  voucher?: {
+    id: string;
+    code: string;
+    label: string;
+    discountPercent: number;
+  };
+  message?: string;
+  error?: string;
 };
 
 const CAPSULE_PROFILES = {
@@ -102,99 +116,195 @@ function generateReward(targetCapsule?: string) {
   };
 }
 
+function jsonResponse(body: GameApiResponse, status = 200) {
+  return NextResponse.json(body, { status });
+}
+
 export async function POST(request: Request) {
-  const supabase = await getSupabaseServerClient();
+  try {
+    const supabase = await getSupabaseServerClient();
 
-  if (!supabase) {
-    return NextResponse.json(
-      { error: "Supabase environment variables are missing." },
-      { status: 500 }
-    );
-  }
-
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Please log in to play." }, { status: 401 });
-  }
-
-  if (await isAdminUser(supabase, user.id)) {
-    return NextResponse.json(
-      { error: "Admin accounts cannot use customer mini-game rewards." },
-      { status: 403 }
-    );
-  }
-
-  const rateLimitResponse = await enforceRateLimit({
-    request,
-    scope: "game:play",
-    limit: 12,
-    windowSeconds: 3600,
-    userId: user.id,
-    message: "Too many game requests were sent. Please slow down and try again shortly."
-  });
-
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
-
-  const payload = (await request.json()) as RewardPayload;
-
-  if (payload.userId !== user.id) {
-    return NextResponse.json({ error: "Invalid player session." }, { status: 403 });
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: gamePlay } = await supabase
-    .from("game_plays")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  const currentPlays =
-    gamePlay?.last_play_date === today ? Number(gamePlay.plays_today ?? 0) : 0;
-
-  if (currentPlays >= 2) {
-    return NextResponse.json({ error: "Daily limit reached." }, { status: 400 });
-  }
-
-  const nextPlays = currentPlays + 1;
-
-  const { error: playError } = await supabase.from("game_plays").upsert(
-    {
-      user_id: user.id,
-      plays_today: nextPlays,
-      last_play_date: today
-    },
-    {
-      onConflict: "user_id"
+    if (!supabase) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Supabase environment variables are missing."
+        },
+        500
+      );
     }
-  );
 
-  if (playError) {
-    return NextResponse.json({ error: playError.message }, { status: 500 });
-  }
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
 
-  const reward = generateReward(payload.targetCapsule);
+    if (!user) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Please log in to play."
+        },
+        401
+      );
+    }
 
-  if (reward) {
-    const { error: voucherError } = await supabase.from("vouchers").insert({
-      user_id: user.id,
-      code: reward.code,
-      discount_percent: reward.discountPercent,
-      is_used: false
+    if (await isAdminUser(supabase, user.id)) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Admin accounts cannot use customer mini-game rewards."
+        },
+        403
+      );
+    }
+
+    const rateLimitResponse = await enforceRateLimit({
+      request,
+      scope: "game:play",
+      limit: 12,
+      windowSeconds: 3600,
+      userId: user.id,
+      message: "Too many game requests were sent. Please slow down and try again shortly."
     });
 
-    if (voucherError) {
-      return NextResponse.json({ error: voucherError.message }, { status: 500 });
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
-  }
 
-  return NextResponse.json({
-    playsLeft: Math.max(2 - nextPlays, 0),
-    didWin: Boolean(reward),
-    reward
-  });
+    const payload = (await request.json()) as RewardPayload;
+
+    if (payload.userId && payload.userId !== user.id) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Invalid player session."
+        },
+        403
+      );
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: gamePlay, error: gamePlayError } = await supabase
+      .from("game_plays")
+      .select("plays_today, last_play_date")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (gamePlayError) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Unable to load your game status right now."
+        },
+        500
+      );
+    }
+
+    const currentPlays =
+      gamePlay?.last_play_date === today ? Number(gamePlay.plays_today ?? 0) : 0;
+
+    if (currentPlays >= 2) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: 0,
+          error: "Daily limit reached."
+        },
+        400
+      );
+    }
+
+    const nextPlays = currentPlays + 1;
+
+    const { error: playError } = await supabase.from("game_plays").upsert(
+      {
+        user_id: user.id,
+        plays_today: nextPlays,
+        last_play_date: today
+      },
+      {
+        onConflict: "user_id"
+      }
+    );
+
+    if (playError) {
+      return jsonResponse(
+        {
+          success: false,
+          won: false,
+          playsLeft: Math.max(2 - currentPlays, 0),
+          error: "Unable to record this play right now."
+        },
+        500
+      );
+    }
+
+    const reward = generateReward(payload.targetCapsule);
+
+    if (reward) {
+      const { data: voucherRow, error: voucherError } = await supabase
+        .from("vouchers")
+        .insert({
+          user_id: user.id,
+          code: reward.code,
+          discount_percent: reward.discountPercent,
+          is_used: false
+        })
+        .select("id, code, discount_percent")
+        .single();
+
+      if (voucherError || !voucherRow) {
+        return jsonResponse(
+          {
+            success: false,
+            won: false,
+            playsLeft: Math.max(2 - nextPlays, 0),
+            error: "Your play was recorded, but the reward could not be saved."
+          },
+          500
+        );
+      }
+
+      return jsonResponse({
+        success: true,
+        won: true,
+        playsLeft: Math.max(2 - nextPlays, 0),
+        voucher: {
+          id: voucherRow.id,
+          code: voucherRow.code,
+          label: reward.rewardLabel,
+          discountPercent: voucherRow.discount_percent
+        },
+        message: `Win: ${reward.discountPercent}% off with code ${reward.code}`
+      });
+    }
+
+    return jsonResponse({
+      success: true,
+      won: false,
+      playsLeft: Math.max(2 - nextPlays, 0),
+      message: "No reward this round. Try again on your next play."
+    });
+  } catch {
+    return jsonResponse(
+      {
+        success: false,
+        won: false,
+        playsLeft: 0,
+        error: "The claw machine request could not be completed."
+      },
+      500
+    );
+  }
 }

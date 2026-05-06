@@ -83,17 +83,7 @@ export function AuthForms() {
           />
         </label>
         <label className="block space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="pixel-heading text-[10px] text-white">Password</span>
-            {mode === "login" ? (
-              <Link
-                href="/auth/forgot-password"
-                className="text-[10px] text-white/50 transition-colors hover:text-accent"
-              >
-                Forgot Password?
-              </Link>
-            ) : null}
-          </div>
+          <span className="pixel-heading text-[10px] text-white">Password</span>
           <input
             className="w-full border border-white/15 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
             type="password"
@@ -101,6 +91,16 @@ export function AuthForms() {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
+          {mode === "login" ? (
+            <div className="pt-1 text-center">
+              <Link
+                href="/auth/forgot-password"
+                className="text-[10px] text-white/50 transition-colors hover:text-accent"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+          ) : null}
         </label>
         <button
           type="submit"

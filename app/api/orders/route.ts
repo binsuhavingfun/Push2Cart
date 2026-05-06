@@ -3,6 +3,7 @@ import { isAdminUser } from "@/lib/admin";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { logSecurityEvent } from "@/lib/security-events";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { CartItem } from "@/lib/types";
 import { normalizeLongText, normalizeShortText, isUuid } from "@/lib/validation";
 import {
@@ -23,6 +24,12 @@ type OrderPayload = {
   deliveryNotes?: string;
   items: CartItem[];
   voucherId?: string | null;
+};
+
+type CreateOrderRpcResult = {
+  order_id: string;
+  total_price?: number | string;
+  payment_status?: string;
 };
 
 const MAX_UNIQUE_ITEMS = 20;
@@ -217,24 +224,36 @@ export async function POST(request: Request) {
   }
 
   const estimatedDelivery = getDeliveryEstimate(normalizedAddress.province);
-  const { data, error } = await supabase.rpc("create_order_with_items", {
-    p_user_id: user.id,
-    p_email: user.email ?? null,
-    p_full_name: normalizedAddress.fullName,
-    p_phone_number: normalizedAddress.phoneNumber,
-    p_street_address: normalizedAddress.streetAddress,
-    p_barangay: normalizedAddress.barangay,
-    p_city: normalizedAddress.city,
-    p_province: normalizedAddress.province,
-    p_postal_code: normalizedAddress.postalCode,
-    p_delivery_notes: normalizedAddress.deliveryNotes,
-    p_address: builtAddress,
-    p_payment_method: "Cash on Delivery",
-    p_voucher_id: payload.voucherId ?? null,
-    p_items: normalizedItems
-  });
+  const adminSupabase = getSupabaseAdminClient();
 
-  const order = Array.isArray(data) ? data[0] : data;
+  if (!adminSupabase) {
+    return NextResponse.json(
+      { error: "Missing SUPABASE_SERVICE_ROLE_KEY. Secure checkout is not configured." },
+      { status: 500 }
+    );
+  }
+
+  const { data, error } = await adminSupabase.rpc(
+    "create_order_with_items",
+    {
+      p_user_id: user.id,
+      p_email: user.email ?? null,
+      p_full_name: normalizedAddress.fullName,
+      p_phone_number: normalizedAddress.phoneNumber,
+      p_street_address: normalizedAddress.streetAddress,
+      p_barangay: normalizedAddress.barangay,
+      p_city: normalizedAddress.city,
+      p_province: normalizedAddress.province,
+      p_postal_code: normalizedAddress.postalCode,
+      p_delivery_notes: normalizedAddress.deliveryNotes,
+      p_address: builtAddress,
+      p_payment_method: "Cash on Delivery",
+      p_voucher_id: payload.voucherId ?? null,
+      p_items: normalizedItems
+    } as never
+  );
+
+  const order = (Array.isArray(data) ? data[0] : data) as CreateOrderRpcResult | null;
 
   if (error || !order?.order_id) {
     return NextResponse.json({ error: error?.message ?? "Order creation failed." }, { status: 400 });

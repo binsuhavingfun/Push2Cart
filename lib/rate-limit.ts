@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type RateLimitOptions = {
   request: Request;
@@ -8,6 +8,13 @@ type RateLimitOptions = {
   windowSeconds: number;
   userId?: string | null;
   message: string;
+};
+
+type RateLimitResult = {
+  allowed: boolean;
+  count?: number;
+  remaining?: number;
+  reset_at?: string;
 };
 
 function getRequestIdentifier(request: Request, userId?: string | null) {
@@ -31,25 +38,33 @@ export async function enforceRateLimit({
   userId,
   message
 }: RateLimitOptions) {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
-    return null;
+    return NextResponse.json(
+      { error: "Missing SUPABASE_SERVICE_ROLE_KEY. Server-side rate limiting is not configured." },
+      { status: 500 }
+    );
   }
 
   const identifier = getRequestIdentifier(request, userId);
-  const { data, error } = await supabase.rpc("check_rate_limit", {
-    p_scope: scope,
-    p_identifier: identifier,
-    p_max_requests: limit,
-    p_window_seconds: windowSeconds
-  });
+  const { data, error } = await supabase.rpc(
+    "check_rate_limit",
+    {
+      p_scope: scope,
+      p_identifier: identifier,
+      p_max_requests: limit,
+      p_window_seconds: windowSeconds
+    } as never
+  );
 
   if (error) {
     return NextResponse.json({ error: "Unable to verify request rate right now." }, { status: 500 });
   }
 
-  if (!data?.allowed) {
+  const result = data as RateLimitResult | null;
+
+  if (!result?.allowed) {
     return NextResponse.json({ error: message }, { status: 429 });
   }
 

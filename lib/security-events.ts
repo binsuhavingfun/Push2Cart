@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type SecurityEventInput = {
   event_type: string;
@@ -22,7 +22,7 @@ export async function logSecurityEvent({
   request,
   details = {}
 }: SecurityEventInput) {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabaseAdminClient();
 
   if (!supabase) {
     return;

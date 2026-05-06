@@ -65,6 +65,7 @@ export function Navbar() {
     "pixel-border pixel-border-cyan px-3 py-2 text-white transition-transform hover:-translate-y-0.5";
   const utilityLinkClasses = "px-3 py-2 transition-colors hover:text-accent";
   const currentLinks = user && adminLoading ? [] : isAdmin ? adminLinks : user ? customerLinks : guestLinks;
+  const isCustomer = Boolean(user) && !isAdmin && !adminLoading;
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 border-b border-primary/30 bg-background/90 backdrop-blur-md">
@@ -98,11 +99,6 @@ export function Navbar() {
                 <Link href="/cart" onClick={closeMobileMenu} className={accentLinkClasses}>
                   Cart ({itemCount})
                 </Link>
-                {user ? (
-                  <Link href="/account" onClick={closeMobileMenu} className={utilityLinkClasses}>
-                    Profile
-                  </Link>
-                ) : null}
               </>
             ) : null}
           </nav>
@@ -111,6 +107,18 @@ export function Navbar() {
         <div className="hidden items-center gap-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/85 lg:flex xl:gap-2">
           {user ? (
             <>
+              {isCustomer ? (
+                <Link
+                  href="/account"
+                  onClick={closeMobileMenu}
+                  className={cn(
+                    authLinkClasses,
+                    pathname === "/account" && "border-primary/50 bg-card text-white"
+                  )}
+                >
+                  Profile
+                </Link>
+              ) : null}
               {isAdmin && !adminLoading ? (
                 <button onClick={handleLogout} className={utilityLinkClasses}>
                   Logout
@@ -182,11 +190,9 @@ export function Navbar() {
                   <Link href="/cart" onClick={closeMobileMenu} className={accentLinkClasses}>
                     Cart ({itemCount})
                   </Link>
-                  {user ? (
-                    <Link href="/account" onClick={closeMobileMenu} className="px-3 py-2 hover:text-accent">
-                      Profile
-                    </Link>
-                  ) : null}
+                  <Link href="/account" onClick={closeMobileMenu} className="px-3 py-2 hover:text-accent">
+                    Profile
+                  </Link>
                 </>
               ) : null}
               {isAdmin && !adminLoading ? (
