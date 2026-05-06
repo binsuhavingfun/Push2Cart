@@ -71,7 +71,7 @@ export function AuthForms() {
           Sign Up
         </button>
       </div>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4 text-left">
         <label className="block space-y-2">
           <span className="pixel-heading text-[10px] text-white">Email</span>
           <input
