@@ -72,7 +72,7 @@ export function Navbar() {
         <div className="flex min-w-0 items-center gap-5 xl:gap-8">
           <Link href="/" className="flex shrink-0 flex-col gap-1">
             <span className="pixel-heading text-lg text-accent sm:text-xl">
-              {isAdmin ? "Push2Cart Admin" : "Push2Cart"}
+              Push2Cart
             </span>
             <span className="text-[10px] font-medium uppercase tracking-[0.32em] text-secondary sm:text-xs">
               Play. Shop. Save.

@@ -13,7 +13,7 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="Featured Loot"
           title="Shop The Retro Drop"
-          description="Shop featured picks. Keep it simple."
+          description="Shop featured picks."
         />
         <ProductGrid products={products.slice(0, 4)} />
       </section>
