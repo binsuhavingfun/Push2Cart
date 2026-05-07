@@ -3,13 +3,6 @@ import path from "node:path";
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 
-const WHITELIST = new Set([
-  "vincetarogpaglicawan@gmail.com",
-  "uchihaitachi20022@gmail.com"
-]);
-
-const ADMIN_EMAIL = "vincetarogpaglicawan@gmail.com";
-const REQUIRED_WHITELIST_SIZE = 2;
 const PAGE_SIZE = 200;
 const DEPENDENCY_TABLES = [
   { table: "admin_users", column: "user_id", mode: "count" },
@@ -63,6 +56,43 @@ function parseArgs(argv) {
   return {
     execute: args.has("--execute"),
     json: args.has("--json")
+  };
+}
+
+function parseEmailList(value) {
+  return value
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function loadCleanupConfig() {
+  const whitelistValue = process.env.PRIVACY_CLEANUP_WHITELIST ?? "";
+  const adminEmail = (process.env.PRIVACY_CLEANUP_ADMIN_EMAIL ?? "").trim().toLowerCase();
+  const whitelistEmails = parseEmailList(whitelistValue);
+
+  if (!whitelistEmails.length) {
+    throw new Error(
+      "Missing PRIVACY_CLEANUP_WHITELIST. Set a comma-separated list of emails in your local env file before running this cleanup."
+    );
+  }
+
+  if (!adminEmail) {
+    throw new Error(
+      "Missing PRIVACY_CLEANUP_ADMIN_EMAIL. Set the required admin email in your local env file before running this cleanup."
+    );
+  }
+
+  if (!whitelistEmails.includes(adminEmail)) {
+    throw new Error(
+      "PRIVACY_CLEANUP_ADMIN_EMAIL must also be included in PRIVACY_CLEANUP_WHITELIST."
+    );
+  }
+
+  return {
+    whitelist: new Set(whitelistEmails),
+    adminEmail,
+    requiredWhitelistSize: whitelistEmails.length
   };
 }
 
@@ -133,11 +163,11 @@ async function getAdminUserIds(supabase) {
   return new Set((data ?? []).map((row) => row.user_id));
 }
 
-function buildUserSummary(user, adminUserIds) {
+function buildUserSummary(user, adminUserIds, whitelist) {
   return {
     id: user.id,
     email: user.email ?? null,
-    is_whitelisted: user.email ? WHITELIST.has(user.email) : false,
+    is_whitelisted: user.email ? whitelist.has(user.email.toLowerCase()) : false,
     is_admin: adminUserIds.has(user.id),
     created_at: user.created_at,
     last_sign_in_at: user.last_sign_in_at ?? null
@@ -165,18 +195,22 @@ async function getDependencySummary(supabase, users) {
   return byUser;
 }
 
-function validateWhitelistUsers(users, adminUserIds) {
-  const whitelistUsers = users.filter((user) => user.email && WHITELIST.has(user.email));
+function validateWhitelistUsers(users, adminUserIds, { whitelist, adminEmail, requiredWhitelistSize }) {
+  const whitelistUsers = users.filter(
+    (user) => user.email && whitelist.has(user.email.toLowerCase())
+  );
 
-  if (whitelistUsers.length !== REQUIRED_WHITELIST_SIZE) {
+  if (whitelistUsers.length !== requiredWhitelistSize) {
     throw new Error(
-      `Expected ${REQUIRED_WHITELIST_SIZE} whitelisted auth users, found ${whitelistUsers.length}. Aborting.`
+      `Expected ${requiredWhitelistSize} whitelisted auth users, found ${whitelistUsers.length}. Aborting.`
     );
   }
 
-  const missingAdmin = whitelistUsers.find((user) => user.email === ADMIN_EMAIL && !adminUserIds.has(user.id));
+  const missingAdmin = whitelistUsers.find(
+    (user) => user.email?.toLowerCase() === adminEmail && !adminUserIds.has(user.id)
+  );
   if (missingAdmin) {
-    throw new Error(`Whitelisted admin ${ADMIN_EMAIL} is missing from public.admin_users. Aborting.`);
+    throw new Error(`Whitelisted admin ${adminEmail} is missing from public.admin_users. Aborting.`);
   }
 
   const duplicateEmails = whitelistUsers
@@ -234,23 +268,30 @@ async function main() {
       persistSession: false
     }
   });
+  const cleanupConfig = loadCleanupConfig();
 
   const allUsers = await listAllAuthUsers(supabase);
   const adminUserIds = await getAdminUserIds(supabase);
 
-  validateWhitelistUsers(allUsers, adminUserIds);
+  validateWhitelistUsers(allUsers, adminUserIds, cleanupConfig);
 
-  const whitelistUsers = allUsers.filter((user) => user.email && WHITELIST.has(user.email));
-  const usersToDelete = allUsers.filter((user) => !user.email || !WHITELIST.has(user.email));
+  const whitelistUsers = allUsers.filter(
+    (user) => user.email && cleanupConfig.whitelist.has(user.email.toLowerCase())
+  );
+  const usersToDelete = allUsers.filter(
+    (user) => !user.email || !cleanupConfig.whitelist.has(user.email.toLowerCase())
+  );
   const dependencySummary = await getDependencySummary(supabase, usersToDelete);
 
   const dryRunSummary = {
     mode: execute ? "execute" : "dry-run",
-    whitelist: [...WHITELIST],
-    whitelist_users: whitelistUsers.map((user) => buildUserSummary(user, adminUserIds)),
+    whitelist: [...cleanupConfig.whitelist],
+    whitelist_users: whitelistUsers.map((user) =>
+      buildUserSummary(user, adminUserIds, cleanupConfig.whitelist)
+    ),
     delete_count: usersToDelete.length,
     delete_candidates: usersToDelete.map((user) => ({
-      ...buildUserSummary(user, adminUserIds),
+      ...buildUserSummary(user, adminUserIds, cleanupConfig.whitelist),
       dependencies: dependencySummary[user.id]
     }))
   };
@@ -264,10 +305,10 @@ async function main() {
   const remainingUsers = await listAllAuthUsers(supabase);
   const remainingAdminUserIds = await getAdminUserIds(supabase);
 
-  validateWhitelistUsers(remainingUsers, remainingAdminUserIds);
+  validateWhitelistUsers(remainingUsers, remainingAdminUserIds, cleanupConfig);
 
   const nonWhitelistedRemaining = remainingUsers.filter(
-    (user) => !user.email || !WHITELIST.has(user.email)
+    (user) => !user.email || !cleanupConfig.whitelist.has(user.email.toLowerCase())
   );
 
   if (nonWhitelistedRemaining.length > 0) {
@@ -279,7 +320,9 @@ async function main() {
   const finalSummary = {
     ...dryRunSummary,
     deleted,
-    remaining_users: remainingUsers.map((user) => buildUserSummary(user, remainingAdminUserIds))
+    remaining_users: remainingUsers.map((user) =>
+      buildUserSummary(user, remainingAdminUserIds, cleanupConfig.whitelist)
+    )
   };
 
   print(finalSummary, json);

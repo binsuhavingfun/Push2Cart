@@ -260,6 +260,8 @@ SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 SENTRY_ORG=
 SENTRY_PROJECT=
+PRIVACY_CLEANUP_WHITELIST=demo-admin@example.com,demo-customer@example.com
+PRIVACY_CLEANUP_ADMIN_EMAIL=demo-admin@example.com
 ```
 
 ### Additional variables used by the report email flow
@@ -277,6 +279,7 @@ Notes:
 - `REPORT_RECEIVER_EMAIL` is required if you want the public report form to work.
 - `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` are optional unless you want Sentry enabled.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are optional and are only needed if you want Sentry release/source-map upload during builds.
+- `PRIVACY_CLEANUP_WHITELIST` and `PRIVACY_CLEANUP_ADMIN_EMAIL` are required if you want to run the privacy cleanup script without hardcoding real email addresses in the repo.
 - To activate Sentry in both the browser and server runtimes, set both `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to your project DSN in local and Vercel environment variables.
 - `.env.local` is gitignored, so real DSN values should stay out of GitHub.
 
@@ -328,6 +331,10 @@ What it does:
 - supports dry-run mode by default
 - deletes non-whitelisted auth users only when run with `--execute`
 - clears related report and security rows that do not rely on cascade deletes
+
+Required local env for this script:
+- `PRIVACY_CLEANUP_WHITELIST`
+- `PRIVACY_CLEANUP_ADMIN_EMAIL`
 
 ## Monitoring
 
