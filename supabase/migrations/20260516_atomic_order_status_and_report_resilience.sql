@@ -26,7 +26,7 @@ create or replace function public.cancel_order_for_customer(
 )
 returns text
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -76,7 +76,7 @@ create or replace function public.update_order_status_as_admin(
 )
 returns text
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
