@@ -64,69 +64,78 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
-  const reportReceiverEmail = process.env.REPORT_RECEIVER_EMAIL;
-
-  if (!resendKey) {
-    return NextResponse.json(
-      { error: "Missing RESEND_API_KEY. Please configure report email sending first." },
-      { status: 500 }
-    );
-  }
-
-  if (!reportReceiverEmail) {
-    return NextResponse.json(
-      { error: "Missing REPORT_RECEIVER_EMAIL. Please configure report delivery first." },
-      { status: 500 }
-    );
-  }
-
   const timestamp = new Date().toISOString();
   const label = subjectLabel(reportType);
   const subject = `[Push2Cart Report] ${label}`;
-
-  const emailResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${resendKey}`
-    },
-    body: JSON.stringify({
-      from: process.env.REPORT_FROM_EMAIL ?? "Push2Cart Reports <onboarding@resend.dev>",
-      to: [reportReceiverEmail],
-      subject,
-      text: [
-        `Report Type: ${reportType}`,
-        `Name: ${name || "N/A"}`,
-        `Email: ${email || "N/A"}`,
-        `Message: ${message}`,
-        `Timestamp: ${timestamp}`
-      ].join("\n")
-    })
-  });
-
-  if (!emailResponse.ok) {
-    const emailPayload = (await emailResponse.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-    return NextResponse.json(
-      { error: emailPayload?.message ?? "Unable to send email report right now." },
-      { status: 500 }
-    );
-  }
-
   const supabase = await getSupabaseServerClient();
+  let savedToDatabase = false;
+  let emailDelivered = false;
+
   if (supabase) {
     const {
       data: { user }
     } = await supabase.auth.getUser();
 
-    await supabase.from("reports").insert({
+    const { error: reportInsertError } = await supabase.from("reports").insert({
       user_id: user?.id ?? null,
       name: name || null,
       email: email || null,
       report_type: reportType,
       message
+    });
+
+    if (!reportInsertError) {
+      savedToDatabase = true;
+    }
+  }
+
+  const resendKey = process.env.RESEND_API_KEY;
+  const reportReceiverEmail = process.env.REPORT_RECEIVER_EMAIL;
+
+  if (resendKey && reportReceiverEmail) {
+    try {
+      const emailResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${resendKey}`
+        },
+        body: JSON.stringify({
+          from: process.env.REPORT_FROM_EMAIL ?? "Push2Cart Reports <onboarding@resend.dev>",
+          to: [reportReceiverEmail],
+          subject,
+          text: [
+            `Report Type: ${reportType}`,
+            `Name: ${name || "N/A"}`,
+            `Email: ${email || "N/A"}`,
+            `Message: ${message}`,
+            `Timestamp: ${timestamp}`
+          ].join("\n")
+        })
+      });
+
+      emailDelivered = emailResponse.ok;
+    } catch {
+      emailDelivered = false;
+    }
+  }
+
+  if (!savedToDatabase && !emailDelivered) {
+    return NextResponse.json(
+      { error: "Unable to submit your report right now. Please try again later." },
+      { status: 500 }
+    );
+  }
+
+  if (savedToDatabase && !emailDelivered) {
+    return NextResponse.json({
+      message: "Thanks for the report. We saved it and will review it soon."
+    });
+  }
+
+  if (!savedToDatabase && emailDelivered) {
+    return NextResponse.json({
+      message: "Thanks for the report. It was delivered to the team and will be reviewed soon."
     });
   }
 

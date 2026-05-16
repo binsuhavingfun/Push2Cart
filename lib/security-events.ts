@@ -1,5 +1,5 @@
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-
+import { getRequestIdentifier } from "@/lib/request-identifiers";
 type SecurityEventInput = {
   event_type: string;
   severity?: "info" | "warning";
@@ -7,13 +7,6 @@ type SecurityEventInput = {
   request: Request;
   details?: Record<string, unknown>;
 };
-
-function getRequestIdentifier(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const ip = forwardedFor?.split(",")[0]?.trim() || realIp?.trim();
-  return ip ?? request.headers.get("user-agent") ?? "unknown";
-}
 
 export async function logSecurityEvent({
   event_type,

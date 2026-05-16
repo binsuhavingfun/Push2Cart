@@ -226,9 +226,11 @@ Copy-Item .env.local.example .env.local
 
 3. Fill in the required Supabase values in `.env.local`.
 
-4. Run [`supabase/schema.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\schema.sql) in your Supabase SQL editor.
+4. For a brand-new Supabase project, run [`supabase/schema.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\schema.sql) in your Supabase SQL editor.
 
-5. If you want an admin account, insert its auth user ID into `public.admin_users`.
+5. For an existing project, apply every SQL file in [`supabase/migrations`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations) in order instead of re-running the full schema snapshot.
+
+6. If you want an admin account, insert its auth user ID into `public.admin_users`.
 
 Example:
 
@@ -238,13 +240,13 @@ values ('YOUR_AUTH_USER_ID')
 on conflict do nothing;
 ```
 
-6. Start the dev server:
+7. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-7. Open [http://localhost:3000](http://localhost:3000).
+8. Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment Variables
 
@@ -320,6 +322,7 @@ It also includes:
 Security migration included in the repo:
 
 - [`supabase/migrations/20260506_fix_security_advisor_warnings.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260506_fix_security_advisor_warnings.sql) tightens report insert policies and restricts sensitive function execution to server-side roles
+- [`supabase/migrations/20260516_atomic_order_status_and_report_resilience.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260516_atomic_order_status_and_report_resilience.sql) adds atomic order-status update functions and keeps app-side status rules aligned in the database
 
 ## Privacy Cleanup Script
 

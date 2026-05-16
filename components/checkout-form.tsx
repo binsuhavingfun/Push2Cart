@@ -100,39 +100,45 @@ export function CheckoutForm() {
 
     setSubmitting(true);
     setMessage("");
-    const normalizedAddress = buildAddressLine(shipping);
+    try {
+      const normalizedAddress = buildAddressLine(shipping);
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fullName: shipping.fullName,
+          phone: shipping.phoneNumber,
+          address: normalizedAddress,
+          streetAddress: shipping.streetAddress,
+          barangay: shipping.barangay,
+          city: shipping.city,
+          province: shipping.province,
+          postalCode: shipping.postalCode,
+          deliveryNotes: shipping.deliveryNotes,
+          items,
+          voucherId: selectedVoucherId || null
+        })
+      });
 
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        fullName: shipping.fullName,
-        phone: shipping.phoneNumber,
-        address: normalizedAddress,
-        streetAddress: shipping.streetAddress,
-        barangay: shipping.barangay,
-        city: shipping.city,
-        province: shipping.province,
-        postalCode: shipping.postalCode,
-        deliveryNotes: shipping.deliveryNotes,
-        items,
-        voucherId: selectedVoucherId || null
-      })
-    });
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; orderId?: string }
+        | null;
 
-    const payload = (await response.json()) as { error?: string; orderId?: string };
+      if (!response.ok || !payload?.orderId) {
+        setMessage(payload?.error ?? "Unable to place order.");
+        return;
+      }
 
-    if (!response.ok || !payload.orderId) {
-      setMessage(payload.error ?? "Unable to place order.");
+      await clearCart();
+      router.push(`/orders/${payload.orderId}`);
+      router.refresh();
+    } catch {
+      setMessage("Unable to place order right now. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    await clearCart();
-    router.push(`/orders/${payload.orderId}`);
-    router.refresh();
   };
 
   return (

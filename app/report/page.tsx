@@ -22,32 +22,37 @@ export default function ReportIssuePage() {
     }
 
     setSubmitting(true);
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          reportType,
+          message
+        })
+      });
 
-    const response = await fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        reportType,
-        message
-      })
-    });
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; message?: string }
+        | null;
 
-    const payload = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        setStatusMessage(payload?.error ?? "Unable to submit your report.");
+        return;
+      }
 
-    if (!response.ok) {
-      setStatusMessage(payload.error ?? "Unable to submit your report.");
+      setStatusMessage(payload?.message ?? "Thanks for the report. We appreciate your feedback.");
+      setName("");
+      setEmail("");
+      setReportType("Bug Report");
+      setMessage("");
+    } catch {
+      setStatusMessage("Unable to submit your report right now. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setStatusMessage(payload.message ?? "Thanks for the report. We appreciate your feedback.");
-    setName("");
-    setEmail("");
-    setReportType("Bug Report");
-    setMessage("");
-    setSubmitting(false);
   };
 
   return (

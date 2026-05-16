@@ -76,22 +76,24 @@ export async function PATCH(
     }
   }
 
-  const { error } = await supabase
-    .from("orders")
-    .update({ status: payload.status })
-    .eq("id", id);
+  const { error } = await supabase.rpc(
+    "update_order_status_as_admin",
+    {
+      p_order_id: id,
+      p_status: payload.status
+    } as never
+  );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    if (error.message === "Order not found.") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
 
-  if (existingOrder.status !== payload.status) {
-    await supabase.from("order_status_events").insert({
-      order_id: id,
-      status: payload.status,
-      actor_user_id: user.id,
-      note: "Updated from admin dashboard"
-    });
+    if (error.message.startsWith("Invalid status transition from ")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
