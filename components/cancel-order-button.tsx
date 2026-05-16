@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function CancelOrderButton({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleCancel = async () => {
-    const confirmed = window.confirm(
-      "Cancel this order? You can only do this before it has been shipped."
-    );
-
-    if (!confirmed) {
+    if (!isConfirming) {
+      setIsConfirming(true);
+      setMessage("Click confirm to cancel this order before shipment.");
       return;
     }
 
@@ -30,24 +29,44 @@ export function CancelOrderButton({ orderId }: { orderId: string }) {
 
     if (!response.ok) {
       setMessage(result?.error ?? "Unable to cancel this order right now.");
+      setIsConfirming(false);
       setIsSubmitting(false);
       return;
     }
 
     setMessage("Order cancelled.");
-    router.refresh();
+    setIsConfirming(false);
+    setIsSubmitting(false);
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   return (
     <div className="mt-5 space-y-3">
-      <button
-        type="button"
-        onClick={handleCancel}
-        disabled={isSubmitting}
-        className="pixel-border px-4 py-3 text-xs text-white disabled:opacity-60"
-      >
-        {isSubmitting ? "Cancelling..." : "Cancel Order"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+          className="pixel-border px-4 py-3 text-xs text-white disabled:opacity-60"
+        >
+          {isSubmitting ? "Cancelling..." : isConfirming ? "Confirm Cancel" : "Cancel Order"}
+        </button>
+        {isConfirming ? (
+          <button
+            type="button"
+            onClick={() => {
+              setIsConfirming(false);
+              setMessage("");
+            }}
+            disabled={isSubmitting}
+            className="pixel-border px-4 py-3 text-xs text-white/75 disabled:opacity-60"
+          >
+            Keep Order
+          </button>
+        ) : null}
+      </div>
       {message ? <p className="text-sm text-secondary">{message}</p> : null}
     </div>
   );
