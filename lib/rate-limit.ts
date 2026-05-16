@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getRequestIdentifier } from "@/lib/request-identifiers";
 
 type RateLimitOptions = {
   request: Request;
@@ -16,19 +17,6 @@ type RateLimitResult = {
   remaining?: number;
   reset_at?: string;
 };
-
-function getRequestIdentifier(request: Request, userId?: string | null) {
-  if (userId) {
-    return `user:${userId}`;
-  }
-
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const fallback = request.headers.get("user-agent") ?? "anonymous";
-  const ip = forwardedFor?.split(",")[0]?.trim() || realIp?.trim();
-
-  return ip ? `ip:${ip}` : `anon:${fallback}`;
-}
 
 export async function enforceRateLimit({
   request,
