@@ -59,6 +59,11 @@ begin
     add constraint orders_status_check
     check (status in ('Pending', 'Confirmed', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'));
 
+  alter table public.order_status_events drop constraint if exists order_status_events_status_check;
+  alter table public.order_status_events
+    add constraint order_status_events_status_check
+    check (status in ('Pending', 'Confirmed', 'Preparing', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'));
+
   if not exists (
     select 1
     from pg_constraint
