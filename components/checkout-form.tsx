@@ -19,19 +19,26 @@ type VoucherOption = {
   discount_percent: number;
 };
 
-export function CheckoutForm() {
+type CheckoutFormProps = {
+  initialShipping?: ShippingAddressInput | null;
+};
+
+const emptyShippingAddress: ShippingAddressInput = {
+  fullName: "",
+  phoneNumber: "",
+  streetAddress: "",
+  barangay: "",
+  city: "",
+  province: "",
+  postalCode: "",
+  deliveryNotes: ""
+};
+
+export function CheckoutForm({ initialShipping = null }: CheckoutFormProps) {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
-  const [shipping, setShipping] = useState<ShippingAddressInput>({
-    fullName: "",
-    phoneNumber: "",
-    streetAddress: "",
-    barangay: "",
-    city: "",
-    province: "",
-    postalCode: "",
-    deliveryNotes: ""
-  });
+  const [shipping, setShipping] = useState<ShippingAddressInput>(initialShipping ?? emptyShippingAddress);
+  const [useSavedAddress, setUseSavedAddress] = useState(Boolean(initialShipping));
   const [vouchers, setVouchers] = useState<VoucherOption[]>([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +65,17 @@ export function CheckoutForm() {
   const deliveryEstimate = shipping.province.trim()
     ? getDeliveryEstimate(shipping.province)
     : null;
+  const hasSavedAddress = Boolean(
+    initialShipping &&
+      initialShipping.fullName &&
+      initialShipping.phoneNumber &&
+      initialShipping.streetAddress &&
+      initialShipping.barangay &&
+      initialShipping.city &&
+      initialShipping.province &&
+      initialShipping.postalCode
+  );
+  const savedAddressSummary = hasSavedAddress ? buildAddressLine(initialShipping as ShippingAddressInput) : "";
 
   const updateField = (field: keyof ShippingAddressInput, value: string) => {
     setShipping((current) => {
@@ -145,38 +163,90 @@ export function CheckoutForm() {
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <form onSubmit={handleSubmit} className="pixel-border pixel-panel p-6">
         <div className="space-y-6">
-          <section className="space-y-4">
-            <h3 className="pixel-heading text-xs text-accent">Shipping Information</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-2">
-                <span className="pixel-heading text-[10px] text-white">Full Name</span>
-                <input
-                  required
-                  value={shipping.fullName}
-                  onChange={(event) => updateField("fullName", event.target.value)}
-                  className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
-                />
-                {fieldErrors.fullName ? (
-                  <p className="text-xs text-primary">{fieldErrors.fullName}</p>
-                ) : null}
-              </label>
-              <label className="block space-y-2">
-                <span className="pixel-heading text-[10px] text-white">Phone Number</span>
-                <input
-                  required
-                  value={shipping.phoneNumber}
-                  onChange={(event) => updateField("phoneNumber", event.target.value)}
-                  placeholder="09XXXXXXXXX or +639XXXXXXXXX"
-                  className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
-                />
-                {fieldErrors.phoneNumber ? (
-                  <p className="text-xs text-primary">{fieldErrors.phoneNumber}</p>
-                ) : null}
-              </label>
-            </div>
-          </section>
+          {hasSavedAddress ? (
+            <section className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="pixel-heading text-xs text-accent">Saved Shipping Address</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShipping(initialShipping as ShippingAddressInput);
+                      setUseSavedAddress(true);
+                      setFieldErrors({});
+                      setMessage("");
+                    }}
+                    className={`pixel-border px-4 py-2 text-[10px] ${
+                      useSavedAddress ? "bg-secondary/20 text-white" : "text-white/75"
+                    }`}
+                  >
+                    Use Saved Address
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShipping(initialShipping as ShippingAddressInput);
+                      setUseSavedAddress(false);
+                      setFieldErrors({});
+                      setMessage("");
+                    }}
+                    className={`pixel-border px-4 py-2 text-[10px] ${
+                      !useSavedAddress ? "bg-accent/20 text-white" : "text-white/75"
+                    }`}
+                  >
+                    Enter New Address
+                  </button>
+                </div>
+              </div>
+              {useSavedAddress ? (
+                <div className="space-y-3 border border-secondary/40 bg-secondary/10 px-4 py-4 text-sm text-white/85">
+                  <p className="pixel-heading text-[10px] text-white">{shipping.fullName}</p>
+                  <p>{savedAddressSummary}</p>
+                  <p>{shipping.phoneNumber}</p>
+                  {shipping.deliveryNotes ? <p>Notes: {shipping.deliveryNotes}</p> : null}
+                </div>
+              ) : (
+                <p className="text-sm text-white/70">
+                  Update the fields below if you want to ship to a different address this time.
+                </p>
+              )}
+            </section>
+          ) : null}
 
           <section className="space-y-4">
+            <h3 className="pixel-heading text-xs text-accent">Shipping Information</h3>
+            {!useSavedAddress || !hasSavedAddress ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block space-y-2">
+                  <span className="pixel-heading text-[10px] text-white">Full Name</span>
+                  <input
+                    required
+                    value={shipping.fullName}
+                    onChange={(event) => updateField("fullName", event.target.value)}
+                    className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
+                  />
+                  {fieldErrors.fullName ? (
+                    <p className="text-xs text-primary">{fieldErrors.fullName}</p>
+                  ) : null}
+                </label>
+                <label className="block space-y-2">
+                  <span className="pixel-heading text-[10px] text-white">Phone Number</span>
+                  <input
+                    required
+                    value={shipping.phoneNumber}
+                    onChange={(event) => updateField("phoneNumber", event.target.value)}
+                    placeholder="09XXXXXXXXX or +639XXXXXXXXX"
+                    className="w-full border border-white/10 bg-background/60 px-4 py-3 outline-none focus:border-secondary"
+                  />
+                  {fieldErrors.phoneNumber ? (
+                    <p className="text-xs text-primary">{fieldErrors.phoneNumber}</p>
+                  ) : null}
+                </label>
+              </div>
+            ) : null}
+          </section>
+
+          <section className={`space-y-4 ${useSavedAddress && hasSavedAddress ? "hidden" : ""}`}>
             <h3 className="pixel-heading text-xs text-accent">Delivery Address</h3>
             <div className="space-y-4">
               <label className="block space-y-2">
