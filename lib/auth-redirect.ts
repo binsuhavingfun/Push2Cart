@@ -16,9 +16,7 @@ export function getAppBaseUrl(origin?: string) {
 
 export function getPasswordResetRedirectUrl(origin?: string) {
   const baseUrl = getAppBaseUrl(origin);
-  const callbackUrl = new URL("/auth/callback", `${baseUrl}/`);
-  callbackUrl.searchParams.set("redirect_to", PASSWORD_RESET_PATH);
-  return callbackUrl.toString();
+  return new URL(PASSWORD_RESET_PATH, `${baseUrl}/`).toString();
 }
 
 export function normalizeInternalPath(path: string | null | undefined, fallback = "/") {
