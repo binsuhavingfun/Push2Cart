@@ -3,28 +3,9 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { SectionHeading } from "@/components/section-heading";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth-redirect";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-
-function getRecoveryErrorFromHash() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  return hashParams.get("error_description") ?? hashParams.get("error") ?? "";
-}
-
-function hasRecoveryHash() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  return hashParams.get("type") === "recovery" || hashParams.has("access_token");
-}
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -43,11 +24,12 @@ function ResetPasswordContent() {
   );
 
   useEffect(() => {
-    const linkError = searchParams.get("error") ?? getRecoveryErrorFromHash();
+    const linkError = searchParams.get("error");
 
     if (linkError) {
       setError(linkError);
       setCheckingLink(false);
+      setIsRecoveryReady(false);
       return;
     }
 
@@ -56,42 +38,11 @@ function ResetPasswordContent() {
     if (!supabase) {
       setError("Add Supabase credentials in .env.local to enable authentication.");
       setCheckingLink(false);
+      setIsRecoveryReady(false);
       return;
     }
 
     let mounted = true;
-    let recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    const applyRecoveryState = (event: AuthChangeEvent, session: Session | null) => {
-      if (!mounted) {
-        return;
-      }
-
-      if (recoveryTimeout) {
-        window.clearTimeout(recoveryTimeout);
-        recoveryTimeout = null;
-      }
-
-      if (event === "PASSWORD_RECOVERY") {
-        setIsRecoveryReady(true);
-        setCheckingLink(false);
-        setError("");
-        return;
-      }
-
-      if (session) {
-        setIsRecoveryReady(true);
-        setCheckingLink(false);
-        setError("");
-        return;
-      }
-
-      if (!hasRecoveryHash()) {
-        setIsRecoveryReady(false);
-        setCheckingLink(false);
-        setError("This password reset link is missing, invalid, or has already expired.");
-      }
-    };
 
     supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!mounted) {
@@ -101,36 +52,24 @@ function ResetPasswordContent() {
       if (sessionError) {
         setError(sessionError.message);
         setCheckingLink(false);
+        setIsRecoveryReady(false);
         return;
       }
 
-      applyRecoveryState("INITIAL_SESSION", data.session);
-
-      if (!data.session && hasRecoveryHash()) {
-        recoveryTimeout = setTimeout(() => {
-          if (!mounted) {
-            return;
-          }
-
-          setCheckingLink(false);
-          setIsRecoveryReady(false);
-          setError("This password reset link is missing, invalid, or has already expired.");
-        }, 2000);
+      if (!data.session) {
+        setError("This password reset link is missing, invalid, or has already expired.");
+        setCheckingLink(false);
+        setIsRecoveryReady(false);
+        return;
       }
-    });
 
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      applyRecoveryState(event, session);
+      setError("");
+      setCheckingLink(false);
+      setIsRecoveryReady(true);
     });
 
     return () => {
       mounted = false;
-      if (recoveryTimeout) {
-        clearTimeout(recoveryTimeout);
-      }
-      subscription.unsubscribe();
     };
   }, [searchParams]);
 
