@@ -31,7 +31,7 @@ export default async function CheckoutPage() {
       <SectionHeading
         eyebrow="Checkout"
         title="Complete Your Arcade Order"
-        description="Cash on Delivery keeps checkout simple. Enter shipping details and we will store the order securely in Supabase."
+        description="Cash on Delivery only. We’ll save your details for faster checkout next time."
       />
       <CheckoutForm initialShipping={initialShipping} />
     </div>
