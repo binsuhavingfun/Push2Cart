@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdminUser } from "@/lib/admin";
 import { enforceRateLimit } from "@/lib/rate-limit";
-import {
-  getReviewEligibilityForProduct,
-  getReviewEligibilityHttpStatus
-} from "@/lib/review-eligibility";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Review } from "@/lib/types";
 import { normalizeLongText } from "@/lib/validation";
@@ -14,6 +9,36 @@ type ReviewPayload = {
   rating: number;
   comment: string;
 };
+
+async function userOrderedProduct(supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseServerClient>>>, userId: string, productId: string) {
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from("order_items")
+    .select("order_id")
+    .eq("product_id", productId);
+
+  if (orderItemsError) {
+    return { error: orderItemsError.message, ordered: false };
+  }
+
+  const orderIds = [...new Set((orderItems ?? []).map((item) => item.order_id))];
+
+  if (!orderIds.length) {
+    return { ordered: false };
+  }
+
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("user_id", userId)
+    .in("id", orderIds)
+    .limit(1);
+
+  if (ordersError) {
+    return { error: ordersError.message, ordered: false };
+  }
+
+  return { ordered: Boolean(orders?.length) };
+}
 
 export async function POST(request: Request) {
   const supabase = await getSupabaseServerClient();
@@ -28,13 +53,6 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Please log in to review products." }, { status: 401 });
-  }
-
-  if (await isAdminUser(supabase, user.id)) {
-    return NextResponse.json(
-      { error: "Admin accounts cannot submit customer product reviews." },
-      { status: 403 }
-    );
   }
 
   const rateLimitResponse = await enforceRateLimit({
@@ -58,16 +76,23 @@ export async function POST(request: Request) {
   const safeComment = normalizeLongText(payload.comment, 500);
   const safeProductId = typeof payload.productId === "string" ? payload.productId.trim() : "";
 
-  if (!safeProductId || !safeProductId.startsWith("prod-") || !safeComment || !safeRating) {
+  if (!safeProductId || !safeComment || !safeRating) {
     return NextResponse.json({ error: "Rating and comment are required." }, { status: 400 });
   }
 
-  const eligibility = await getReviewEligibilityForProduct(supabase, safeProductId);
+  const purchaseCheck = await userOrderedProduct(supabase, user.id, safeProductId);
 
-  if (!eligibility.canSubmit) {
+  if (purchaseCheck.error) {
     return NextResponse.json(
-      { error: eligibility.message },
-      { status: getReviewEligibilityHttpStatus(eligibility.reasonCode) }
+      { error: purchaseCheck.error ?? "Unable to verify purchase history." },
+      { status: 500 }
+    );
+  }
+
+  if (!purchaseCheck.ordered) {
+    return NextResponse.json(
+      { error: "You need to purchase this product to review it." },
+      { status: 403 }
     );
   }
 
@@ -108,4 +133,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ review: review as Review, average: Number(average.toFixed(1)) });
 }
-

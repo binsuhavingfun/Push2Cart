@@ -29,6 +29,7 @@ The current homepage featured section uses:
 - Email/password auth with forgot-password and reset-password flow
 - Product listing and product detail pages
 - Product reviews with 1 to 5 star ratings and comments
+- Users can only review products they have purchased
 - Checkout with Cash on Delivery, shipping validation, and voucher redemption
 - Customer account page with profile overview, orders, purchase history, vouchers, and logout
 - Order list and order detail pages with status timeline
@@ -131,10 +132,14 @@ Notes:
 
 - Auth page: `/auth`
 - Forgot-password page: `/auth/forgot-password`
-- Reset callback route: `/auth/callback`
 - Reset page: `/auth/reset-password`
 
-The login form includes a `Forgot Password?` link. Reset emails return through `/auth/callback` and then forward the user to `/auth/reset-password`.
+The login form includes a `Forgot Password?` link. Reset emails should return directly to `/auth/reset-password`.
+
+Deployment note:
+- On Vercel, set `NEXT_PUBLIC_SITE_URL` to your deployed app URL.
+- In Supabase Auth settings, keep your Site URL and allowed redirect URLs aligned with your Vercel domain, including `/auth/reset-password`.
+- Old recovery emails remain tied to the URL that was generated when they were sent, so request a fresh reset email after changing auth URL settings.
 
 ## Cart, Checkout, Orders, and Vouchers
 
@@ -150,6 +155,12 @@ The login form includes a `Forgot Password?` link. Reset emails return through `
 - Orders are created through a server-side RPC flow that also inserts order items, deducts stock, marks a voucher as used, and clears the cart.
 - Checkout rejects invalid quantities, oversized orders, cart mismatches, duplicate submissions, and admin-side misuse before an order is finalized.
 - Customer order detail pages include a shipment timeline and allow cancellation before shipment.
+
+## Product Reviews
+
+- Customers can only review products they have purchased.
+- Backend validation blocks review submissions unless the user has already ordered the product.
+- Duplicate review attempts are rejected so each customer can leave one review per product.
 
 ## Claw Machine
 
@@ -280,6 +291,7 @@ Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` is required for the secure checkout RPC path and the privacy cleanup script.
 - `REPORT_RECEIVER_EMAIL` is required if you want the public report form to work.
 - `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` are optional unless you want Sentry enabled.
+- `NEXT_PUBLIC_SITE_URL` should stay as `http://localhost:3000` for local development, but in Vercel it should be your deployed app origin so auth and password recovery links do not point back to localhost.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are optional and are only needed if you want Sentry release/source-map upload during builds.
 - `PRIVACY_CLEANUP_WHITELIST` and `PRIVACY_CLEANUP_ADMIN_EMAIL` are required if you want to run the privacy cleanup script without hardcoding real email addresses in the repo.
 - To activate Sentry in both the browser and server runtimes, set both `NEXT_PUBLIC_SENTRY_DSN` and `SENTRY_DSN` to your project DSN in local and Vercel environment variables.
@@ -322,6 +334,7 @@ It also includes:
 Security migration included in the repo:
 
 - [`supabase/migrations/20260506_fix_security_advisor_warnings.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260506_fix_security_advisor_warnings.sql) tightens report insert policies and restricts sensitive function execution to server-side roles
+- [`supabase/migrations/20260516_sync_order_status_event_constraint.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260516_sync_order_status_event_constraint.sql) repairs older `order_status_events` status constraints so checkout can write the current `Pending` event
 - [`supabase/migrations/20260516_atomic_order_status_and_report_resilience.sql`](C:\Users\vinci\Documents\Push2Cart\supabase\migrations\20260516_atomic_order_status_and_report_resilience.sql) adds atomic order-status update functions and keeps app-side status rules aligned in the database
 
 ## Privacy Cleanup Script

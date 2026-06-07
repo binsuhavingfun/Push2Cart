@@ -6,10 +6,9 @@ import { ProductReviews } from "@/components/product-reviews";
 import { SectionHeading } from "@/components/section-heading";
 import { isAdminUser } from "@/lib/admin";
 import { formatCurrency } from "@/lib/format";
-import { getReviewEligibilityForProduct } from "@/lib/review-eligibility";
 import { getProducts } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { Review, ReviewEligibility } from "@/lib/types";
+import type { Review } from "@/lib/types";
 
 export default async function ProductDetailPage({
   params
@@ -38,17 +37,6 @@ export default async function ProductDetailPage({
         .eq("product_id", id)
         .order("created_at", { ascending: false })
     : { data: [] as Review[] };
-  const reviewEligibility: ReviewEligibility =
-    supabase && user && !isAdmin
-      ? await getReviewEligibilityForProduct(supabase, id)
-      : {
-          canSubmit: false,
-          reasonCode: user ? "admin_account" : "login_required",
-          message: user
-            ? "Admin accounts cannot submit customer product reviews."
-            : "Please log in to submit a review.",
-          qualifyingOrderId: null
-        };
 
   const reviews = (rawReviews as Review[] | null) ?? [];
   const average = reviews.length
@@ -103,7 +91,6 @@ export default async function ProductDetailPage({
         productId={id}
         initialReviews={reviews}
         initialAverage={average}
-        reviewEligibility={reviewEligibility}
       />
     </div>
   );

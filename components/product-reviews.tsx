@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Review, ReviewEligibility } from "@/lib/types";
+import type { Review } from "@/lib/types";
 
 type ProductReviewsProps = {
   productId: string;
   initialReviews: Review[];
   initialAverage: number;
-  reviewEligibility: ReviewEligibility;
 };
 
 function renderStars(rating: number) {
@@ -17,16 +16,15 @@ function renderStars(rating: number) {
 export function ProductReviews({
   productId,
   initialReviews,
-  initialAverage,
-  reviewEligibility
+  initialAverage
 }: ProductReviewsProps) {
   const [reviews, setReviews] = useState(initialReviews);
   const [average, setAverage] = useState(initialAverage);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [message, setMessage] = useState(reviewEligibility.message);
+  const [message, setMessage] = useState("");
+  const [blocked, setBlocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [canSubmit, setCanSubmit] = useState(reviewEligibility.canSubmit);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,6 +46,9 @@ export function ProductReviews({
 
     if (!response.ok || !payload.review) {
       setMessage(payload.error ?? "Unable to submit review.");
+      if (response.status === 401 || response.status === 403) {
+        setBlocked(true);
+      }
       setSubmitting(false);
       return;
     }
@@ -57,7 +58,7 @@ export function ProductReviews({
     setComment("");
     setRating(5);
     setMessage("Review posted.");
-    setCanSubmit(false);
+    setBlocked(true);
     setSubmitting(false);
   };
 
@@ -70,45 +71,46 @@ export function ProductReviews({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="pixel-border pixel-panel p-6 space-y-4">
-        <p className="pixel-heading text-xs text-white">
-          {canSubmit ? "Write A Review" : "Review Access"}
-        </p>
-        {!canSubmit ? (
-          <p className="text-sm text-white/70">{message}</p>
-        ) : (
-          <>
-            <label className="block space-y-2">
-              <span className="text-xs uppercase tracking-[0.2em] text-secondary">Rating</span>
-              <select
-                value={rating}
-                onChange={(event) => setRating(Number(event.target.value))}
-                className="w-full border border-white/15 bg-background/60 px-3 py-2"
-              >
-                {[5, 4, 3, 2, 1].map((value) => (
-                  <option key={value} value={value}>
-                    {value} - {renderStars(value)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-2">
-              <span className="text-xs uppercase tracking-[0.2em] text-secondary">Comment</span>
-              <textarea
-                required
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                className="min-h-24 w-full border border-white/15 bg-background/60 px-3 py-2"
-                placeholder="Share your experience with this product."
-              />
-            </label>
-            <button disabled={submitting} className="pixel-border px-4 py-3 text-xs">
-              {submitting ? "Posting..." : "Post Review"}
-            </button>
-            {message ? <p className="text-sm text-secondary">{message}</p> : null}
-          </>
-        )}
-      </form>
+      {blocked ? (
+        <div className="pixel-border pixel-panel p-6">
+          <p className="pixel-heading text-xs text-white">Review Locked</p>
+          <p className="mt-3 text-sm text-white/70">
+            {message || "You need to purchase this product to review it."}
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="pixel-border pixel-panel space-y-4 p-6">
+          <p className="pixel-heading text-xs text-white">Write A Review</p>
+          <label className="block space-y-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-secondary">Rating</span>
+            <select
+              value={rating}
+              onChange={(event) => setRating(Number(event.target.value))}
+              className="w-full border border-white/15 bg-background/60 px-3 py-2"
+            >
+              {[5, 4, 3, 2, 1].map((value) => (
+                <option key={value} value={value}>
+                  {value} - {renderStars(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block space-y-2">
+            <span className="text-xs uppercase tracking-[0.2em] text-secondary">Comment</span>
+            <textarea
+              required
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              className="min-h-24 w-full border border-white/15 bg-background/60 px-3 py-2"
+              placeholder="Share your experience with this product."
+            />
+          </label>
+          <button disabled={submitting} className="pixel-border px-4 py-3 text-xs">
+            {submitting ? "Posting..." : "Post Review"}
+          </button>
+          {message ? <p className="text-sm text-secondary">{message}</p> : null}
+        </form>
+      )}
 
       <div className="space-y-4">
         {reviews.map((review) => (
@@ -124,4 +126,3 @@ export function ProductReviews({
     </section>
   );
 }
-

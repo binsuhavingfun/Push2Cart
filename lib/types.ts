@@ -81,20 +81,3 @@ export type Review = {
   created_at: string;
   username?: string;
 };
-
-export type ReviewEligibilityReason =
-  | "eligible"
-  | "login_required"
-  | "admin_account"
-  | "duplicate_review"
-  | "not_purchased"
-  | "not_delivered"
-  | "product_not_found"
-  | "unknown_error";
-
-export type ReviewEligibility = {
-  canSubmit: boolean;
-  reasonCode: ReviewEligibilityReason;
-  message: string;
-  qualifyingOrderId?: string | null;
-};
