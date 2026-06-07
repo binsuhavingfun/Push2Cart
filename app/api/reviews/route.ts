@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { isAdminUser } from "@/lib/admin";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import {
+  getReviewEligibilityForProduct,
+  getReviewEligibilityHttpStatus
+} from "@/lib/review-eligibility";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import type { Review } from "@/lib/types";
 import { normalizeLongText } from "@/lib/validation";
@@ -47,12 +51,24 @@ export async function POST(request: Request) {
   }
 
   const payload = (await request.json()) as ReviewPayload;
-  const safeRating = Math.max(1, Math.min(5, Number(payload.rating)));
+  const numericRating = Number(payload.rating);
+  const safeRating = Number.isFinite(numericRating)
+    ? Math.max(1, Math.min(5, Math.trunc(numericRating)))
+    : 0;
   const safeComment = normalizeLongText(payload.comment, 500);
   const safeProductId = typeof payload.productId === "string" ? payload.productId.trim() : "";
 
-  if (!safeProductId || !safeProductId.startsWith("prod-") || !safeComment) {
+  if (!safeProductId || !safeProductId.startsWith("prod-") || !safeComment || !safeRating) {
     return NextResponse.json({ error: "Rating and comment are required." }, { status: 400 });
+  }
+
+  const eligibility = await getReviewEligibilityForProduct(supabase, safeProductId);
+
+  if (!eligibility.canSubmit) {
+    return NextResponse.json(
+      { error: eligibility.message },
+      { status: getReviewEligibilityHttpStatus(eligibility.reasonCode) }
+    );
   }
 
   const username = user.email?.split("@")[0] ?? "User";
@@ -70,6 +86,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !review) {
+    if (error?.code === "23505") {
+      return NextResponse.json(
+        { error: "You have already reviewed this product." },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ error: error?.message ?? "Unable to post review." }, { status: 500 });
   }
 
@@ -85,3 +108,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ review: review as Review, average: Number(average.toFixed(1)) });
 }
+
