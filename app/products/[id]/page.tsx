@@ -4,11 +4,12 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 import { ProductCard } from "@/components/product-card";
 import { ProductReviews } from "@/components/product-reviews";
 import { SectionHeading } from "@/components/section-heading";
-import { getServerAdminState } from "@/lib/admin";
+import { isAdminUser } from "@/lib/admin";
 import { formatCurrency } from "@/lib/format";
+import { getReviewEligibilityForProduct } from "@/lib/review-eligibility";
 import { getProducts } from "@/lib/products";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { Review } from "@/lib/types";
+import type { Review, ReviewEligibility } from "@/lib/types";
 
 export default async function ProductDetailPage({
   params
@@ -18,7 +19,6 @@ export default async function ProductDetailPage({
   const { id } = await params;
   const products = await getProducts();
   const product = products.find((item) => item.id === id);
-  const isAdmin = await getServerAdminState();
 
   if (!product) {
     notFound();
@@ -26,6 +26,11 @@ export default async function ProductDetailPage({
 
   const relatedProducts = products.filter((item) => item.id !== id).slice(0, 3);
   const supabase = await getSupabaseServerClient();
+  const {
+    data: { user }
+  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
+
+  const isAdmin = supabase && user ? await isAdminUser(supabase, user.id) : false;
   const { data: rawReviews } = supabase
     ? await supabase
         .from("reviews")
@@ -33,6 +38,17 @@ export default async function ProductDetailPage({
         .eq("product_id", id)
         .order("created_at", { ascending: false })
     : { data: [] as Review[] };
+  const reviewEligibility: ReviewEligibility =
+    supabase && user && !isAdmin
+      ? await getReviewEligibilityForProduct(supabase, id)
+      : {
+          canSubmit: false,
+          reasonCode: user ? "admin_account" : "login_required",
+          message: user
+            ? "Admin accounts cannot submit customer product reviews."
+            : "Please log in to submit a review.",
+          qualifyingOrderId: null
+        };
 
   const reviews = (rawReviews as Review[] | null) ?? [];
   const average = reviews.length
@@ -83,7 +99,12 @@ export default async function ProductDetailPage({
           ))}
         </div>
       </section>
-      <ProductReviews productId={id} initialReviews={reviews} initialAverage={average} />
+      <ProductReviews
+        productId={id}
+        initialReviews={reviews}
+        initialAverage={average}
+        reviewEligibility={reviewEligibility}
+      />
     </div>
   );
 }
