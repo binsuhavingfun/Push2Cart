@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useAdminStatus } from "@/hooks/use-admin-status";
-import { useAuth } from "@/hooks/use-auth";
-import type { Review } from "@/lib/types";
+import type { Review, ReviewEligibility } from "@/lib/types";
 
 type ProductReviewsProps = {
   productId: string;
   initialReviews: Review[];
   initialAverage: number;
+  reviewEligibility: ReviewEligibility;
 };
 
 function renderStars(rating: number) {
@@ -18,24 +17,19 @@ function renderStars(rating: number) {
 export function ProductReviews({
   productId,
   initialReviews,
-  initialAverage
+  initialAverage,
+  reviewEligibility
 }: ProductReviewsProps) {
-  const { user } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const [reviews, setReviews] = useState(initialReviews);
   const [average, setAverage] = useState(initialAverage);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(reviewEligibility.message);
   const [submitting, setSubmitting] = useState(false);
+  const [canSubmit, setCanSubmit] = useState(reviewEligibility.canSubmit);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!user) {
-      setMessage("Please log in to submit a review.");
-      return;
-    }
 
     setSubmitting(true);
     setMessage("");
@@ -63,6 +57,7 @@ export function ProductReviews({
     setComment("");
     setRating(5);
     setMessage("Review posted.");
+    setCanSubmit(false);
     setSubmitting(false);
   };
 
@@ -76,13 +71,11 @@ export function ProductReviews({
       </div>
 
       <form onSubmit={handleSubmit} className="pixel-border pixel-panel p-6 space-y-4">
-        <p className="pixel-heading text-xs text-white">{isAdmin ? "Admin Review View" : "Write A Review"}</p>
-        {isAdmin ? (
-          <p className="text-sm text-white/70">
-            Admin accounts can read customer reviews here, but cannot submit product reviews or other shopper feedback actions.
-          </p>
-        ) : adminLoading && user ? (
-          <p className="text-sm text-white/70">Loading review controls...</p>
+        <p className="pixel-heading text-xs text-white">
+          {canSubmit ? "Write A Review" : "Review Access"}
+        </p>
+        {!canSubmit ? (
+          <p className="text-sm text-white/70">{message}</p>
         ) : (
           <>
             <label className="block space-y-2">
@@ -131,3 +124,4 @@ export function ProductReviews({
     </section>
   );
 }
+
